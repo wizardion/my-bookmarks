@@ -1,0 +1,35 @@
+<div class="toolbar">
+  <fieldset>
+    <label>
+      <input type="checkbox" name="expand-all" disabled>
+      <span class="margin-right">Expand all</span>
+    </label>
+  </fieldset>
+
+  <fieldset class="extent relative margin-left">
+    <button name="cancel-check" class="warn" hidden>
+      <include src="./assets/images/cancel.svg"></include>
+    </button>
+    <label>
+      <button name="check-bookmarks" disabled>
+        <include src="./assets/images/check.svg"></include>
+      </button>
+      <span>Check all</span>
+    </label>
+    <label>
+      <button name="remove-bookmarks" disabled>
+        <include src="./assets/images/check.svg"></include>
+      </button>
+      <span>Remove selected</span>
+    </label>
+  </fieldset>
+
+  <fieldset class="right">
+    <label>
+      <input type="range" min="0" max="60" value="30" step="5" name="timeout-range" class="slider" disabled>
+      <span name="timeout-text" class="timeout-text">30 s</span>
+    </label>
+  </fieldset>
+
+  <div class="progress-bar" , name="progress-bar" hidden></div>
+</div>

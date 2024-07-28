@@ -1,0 +1,22 @@
+svg .check {
+  display: initial;
+}
+
+svg .fail,
+svg .success {
+  display: none;
+}
+
+.sync.processing svg .check,
+.sync.success svg .check,
+.sync.fail svg .check {
+  display: none;
+}
+
+.sync.success svg .success {
+  display: initial;
+}
+
+.sync.fail svg .fail {
+  display: initial;
+}

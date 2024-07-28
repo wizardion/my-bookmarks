@@ -1,0 +1,44 @@
+.bookmark-line {
+  line-height: 26px;
+  border-bottom: 1px dashed var(--tile-border-color);
+}
+
+bookmark-item,
+bookmark-folder {
+  display: flex;
+}
+
+.bookmark-line:last-child {
+  border-bottom: transparent;
+}
+
+.controls-space,
+.bookmark-controls {
+  display: block;
+  width: 65px;
+}
+
+.bookmark-item {
+  display: block;
+  flex: 1 1 65px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.bookmark-item a {
+  max-width: calc(100% - 25px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.bookmark-controls:has(input[type=checkbox]:checked) + div,
+.controls-space:has(input[type=checkbox]:checked) + div {
+  background-color: var(--control-activated-background-color);
+}
+
+.bookmark-controls:has(input[type=checkbox]:checked) + div a,
+.controls-space:has(input[type=checkbox]:checked) + div a {
+  color: var(--base-highlight-color);
+  text-decoration: underline;
+}

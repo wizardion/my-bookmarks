@@ -1,0 +1,62 @@
+bookmark-item .status svg .unsuccessful,
+bookmark-item .status svg .success,
+bookmark-item .status svg .forbidden,
+bookmark-item .status svg .error,
+
+bookmark-item .status.success svg .check,
+bookmark-item .status.unsuccessful svg .check,
+bookmark-item .status.forbidden svg .check,
+bookmark-item .status.error svg .check {
+  display: none;
+}
+
+bookmark-item .status.success svg .success,
+bookmark-item .status.unsuccessful svg .unsuccessful,
+bookmark-item .status.forbidden svg .forbidden,
+bookmark-item .status.error svg .error {
+  display: inherit;
+}
+
+bookmark-item .status:disabled {
+  background-color: transparent;
+}
+
+bookmark-item .status svg .check {
+  stroke: var(--control-bright-color);
+}
+
+bookmark-item .status svg .unsuccessful {
+  fill: var(--unsuccessful-color);
+}
+
+bookmark-item .status svg .forbidden {
+  fill: var(--validator-warn-color);
+}
+
+bookmark-item .status svg .error {
+  fill: var(--dangerous-color);
+}
+
+// bookmark-item svg {
+//   min-width: 21px;
+// }
+
+// bookmark-item .icon {
+//   // display: inline-block;
+//   background-repeat: no-repeat;
+//   height: 16px;
+//   margin: 2px;
+//   width: 16px;
+//   // border: 1px solid rebeccapurple;
+//   background-size: 16px;
+//   margin-right: 5px;
+//   display: none;
+// }
+
+// bookmark-item .favicon .icon {
+//   display: inline-block;
+// }
+
+// bookmark-item .favicon svg {
+//   display: none;
+// }
