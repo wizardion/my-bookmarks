@@ -5,6 +5,7 @@ import { IBookmarkResponse, IBookmarkStatus, STATUSES } from './models/bookmark.
 import { BaseElement } from '../base.component';
 import { delay, IBookmarkNode } from 'core';
 import { BookmarkManager } from 'services/bookmark-manager.service';
+import { SettingsService } from 'services/settings.service';
 
 
 const template: DocumentFragment = BaseElement.template({
@@ -24,7 +25,6 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
   private status: HTMLButtonElement;
   private checkbox: HTMLInputElement;
   private _bookmark: IBookmarkNode;
-  private _timeout: number = 5000;
   private _valid: boolean;
 
   constructor() {
@@ -65,13 +65,15 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
     this.checkbox.checked = false;
   }
 
-  async checkBookmark() {
+  async checkBookmark(timeout?: number) {
     if (!this.status.disabled) {
+      const settings = timeout ? null : await SettingsService.get();
+
       this.status.disabled = true;
       this.reset();
       this.startAnimations(this.status.getElementsByTagName('animate'));
 
-      const response = await this.requestURL(this._bookmark.url);
+      const response = await this.requestURL(this._bookmark.url, (timeout || settings.timeout) * 1000);
       const status = this.getStatus(response);
 
       this.stopAnimations(this.status.getElementsByTagName('animate'));
@@ -97,10 +99,6 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
     // }
   }
 
-  set timeout(value: number) {
-    this._timeout = value;
-  }
-
   set disabled(value: boolean) {
     this.checkbox.disabled = value;
     super.disabled = value;
@@ -118,14 +116,14 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
     }
   }
 
-  private async requestURL(url: string): Promise<IBookmarkResponse> {
+  private async requestURL(url: string, timeout: number): Promise<IBookmarkResponse> {
     if (url.match(/^chrome/g,)) {
       return { ok: false, status: -3, statusText: 'Scheme "chrome" is not supported.' };
     }
 
     try {
       this.controller = new AbortController();
-      const id = setTimeout(() => this.controller.abort('timeout'), this._timeout);
+      const id = setTimeout(() => this.controller.abort('timeout'), timeout);
       const response = await fetch(url, {
         method: 'GET',
         cache: 'no-cache',

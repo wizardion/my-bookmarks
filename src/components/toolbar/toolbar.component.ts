@@ -41,12 +41,7 @@ export class BookmarkToolbarElement extends BaseElement {
   protected eventListeners(): void {
     this.form.expand.addEventListener('change', () => this.onRecursiveChange());
     this.form.check.addEventListener('click', () => this.checkAllBookmarks(BookmarkRender.bookmarks));
-    this.form.timeout.addEventListener('input', () => {
-      const value = Number(this.form.timeout.value);
-      const timeout = Math.max(value, 1);
-
-      this.form.timeoutText.innerText = timeout + ' s';
-    });
+    this.form.timeout.addEventListener('input', () => this.onTimeoutChange());
 
     this.form.cancel.addEventListener('click', () => this.cancelRequests());
     this.form.remove.addEventListener('click', () => this.removeSelected());
@@ -70,7 +65,7 @@ export class BookmarkToolbarElement extends BaseElement {
 
       for (let j = 0; j < chunk.length && !this.canceled; j++) {
         const element = chunk[j];
-        const promise = element.checkBookmark();
+        const promise = element.checkBookmark(this._settings.timeout);
 
         promises.push(promise);
         promise.finally(() => this.processResult(element));
@@ -97,6 +92,8 @@ export class BookmarkToolbarElement extends BaseElement {
     this._settings = value;
 
     this.form.expand.checked = value.recursive;
+    this.form.timeout.value = value.timeout.toString();
+    this.form.timeoutText.innerText = value.timeout + ' s';
   }
 
   private progress(processed: number, total: number): number {
@@ -152,11 +149,24 @@ export class BookmarkToolbarElement extends BaseElement {
   }
 
   private async onRecursiveChange() {
+    this._settings = await SettingsService.get();
     this._settings.recursive = this.form.expand.checked;
 
     BookmarkRender.recursive = this._settings.recursive;
 
     BookmarkRender.render();
+    SettingsService.set(this._settings);
+  }
+
+  private async onTimeoutChange() {
+    const value = Number(this.form.timeout.value);
+    const timeout = Math.max(value, 1);
+
+    this.form.timeoutText.innerText = timeout + ' s';
+
+    this._settings = await SettingsService.get();
+    this._settings.timeout = timeout;
+
     SettingsService.set(this._settings);
   }
 

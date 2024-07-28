@@ -1,19 +1,17 @@
-import { IEventListener } from 'core/index';
-import { ISettingEventTypes, ISettings } from './models/settings.models';
+import { ISettingEventListener, ISettingEventTypes, ISettings } from './models/settings.models';
 
 
 export const defaultSettings: ISettings = {
   recursive: false,
+  timeout: 30
 };
 
 
 export class SettingsService {
   private static name = 'SettingsService';
-  private static listeners = new Map<ISettingEventTypes, IEventListener[]>();
+  private static listeners = new Map<ISettingEventTypes, ISettingEventListener[]>();
 
   static async get(): Promise<ISettings> {
-    console.log('chrome.storage', chrome.storage);
-
     const settings = await chrome.storage.local.get(this.name);
 
     return settings[this.name] || defaultSettings as ISettings;
@@ -25,7 +23,11 @@ export class SettingsService {
     this.onEventHandler('update', value);
   }
 
-  static addEventListener(type: ISettingEventTypes, listener: IEventListener) {
+  static async clear(): Promise<void> {
+    return chrome.storage.local.remove(this.name);
+  }
+
+  static addEventListener(type: ISettingEventTypes, listener: ISettingEventListener) {
     if (type === 'update') {
       const handlers = this.listeners.get(type) || [];
 
