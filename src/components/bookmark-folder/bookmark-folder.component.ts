@@ -1,7 +1,8 @@
 import { BookmarkTypes, IBookmarkElement } from 'components/models/bookmark.models';
-import { BaseElement } from '../base.component';
+import { BaseElement } from '../base/base.component';
 import { IBookmarkNode } from 'core';
 import { BookmarkManager } from 'services/bookmark-manager.service';
+import { BookmarkControlsElement } from 'components/bookmark-controls/bookmark-controls';
 
 
 export type IEventListener = (e?: Event) => void;
@@ -16,9 +17,8 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
   readonly type = BookmarkTypes.FOLDER;
 
   private content: HTMLElement;
-  private checkbox: HTMLInputElement;
   private link: HTMLLinkElement;
-  // private items: HTMLDivElement;
+  private controls: BookmarkControlsElement;
   private _bookmark: IBookmarkNode;
   private listeners = new Map<'click', IEventListener>();
 
@@ -27,12 +27,11 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
     this.template = <HTMLElement>template.cloneNode(true);
     this.link = this.template.querySelector('[name="link"]');
     this.content = this.template.querySelector('[name="content"]');
-    this.checkbox = this.template.querySelector('[name="mark"]');
-    // this.items = this.template.querySelector('[name="children"]');
+    this.controls = this.template.querySelector('[name="controls"]');
   }
 
   protected eventListeners(): void {
-    this.checkbox.addEventListener('change', () => this.onSelectionChange());
+    this.controls.checkbox.addEventListener('change', () => this.onSelectionChange());
   }
 
   addEventListener(type: 'click', listener: IEventListener, options?: boolean | AddEventListenerOptions) {
@@ -50,8 +49,8 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
   }
 
   select() {
-    if (!this.checkbox.disabled) {
-      this.checkbox.checked = true;
+    if (!this.controls.checkbox.disabled) {
+      this.controls.checkbox.checked = true;
       this.onSelectionChange();
     }
   }
@@ -68,12 +67,12 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
   }
 
   set disabled(value: boolean) {
-    this.checkbox.disabled = value;
+    this.controls.checkbox.disabled = value;
     super.disabled = value;
   }
 
   private onSelectionChange() {
-    if (this.checkbox.checked) {
+    if (this.controls.checkbox.checked) {
       BookmarkManager.select(this._bookmark);
     } else {
       BookmarkManager.unselect(this._bookmark.id);

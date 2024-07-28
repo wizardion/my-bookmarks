@@ -32,13 +32,11 @@ bookmark-folder {
   overflow: hidden;
 }
 
-.bookmark-controls:has(input[type=checkbox]:checked) + div,
-.controls-space:has(input[type=checkbox]:checked) + div {
+bookmark-controls:has(input[type=checkbox]:checked) + .bookmark-item {
   background-color: var(--control-activated-background-color);
 }
 
-.bookmark-controls:has(input[type=checkbox]:checked) + div a,
-.controls-space:has(input[type=checkbox]:checked) + div a {
+bookmark-controls:has(input[type=checkbox]:checked) + .bookmark-item a {
   color: var(--base-highlight-color);
   text-decoration: underline;
 }

@@ -1,6 +1,6 @@
 import './assets/styles/toolbar.component.scss';
 
-import { BaseElement } from '../base.component';
+import { BaseElement } from '../base/base.component';
 import { BookmarkElement } from 'components/bookmark/bookmark.component';
 import { BookmarkRender } from 'services/bookmarks-render.service';
 import { IToolbarForm } from './models/toolbar.models';

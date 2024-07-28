@@ -1,29 +1,27 @@
-import './assets/styles/bookmark-controls.scss';
-
-import { BookmarkTypes, IBookmarkElement } from 'components/models/bookmark.models';
-import { IBookmarkResponse, IBookmarkStatus, STATUSES } from './models/bookmark.models';
-import { BaseElement } from '../base.component';
+import {
+  BookmarkTypes, IBookmarkElement, IBookmarkResponse,
+  IBookmarkStatus, STATUSES
+} from 'components/models/bookmark.models';
+import { BaseElement } from '../base/base.component';
 import { delay, IBookmarkNode } from 'core';
 import { BookmarkManager } from 'services/bookmark-manager.service';
 import { SettingsService } from 'services/settings.service';
+import { BookmarkControlsElement } from 'components/bookmark-controls/bookmark-controls';
 
 
 const template: DocumentFragment = BaseElement.template({
   templateUrl: './bookmark.component.html'
 });
-// const domainRegex = /^(?:https?:\/\/)?(?:[^@/\n]+@)?(?:www\.)?([^:/?\n]+)/im;
 
 export class BookmarkElement extends BaseElement implements IBookmarkElement {
   static readonly selector = 'bookmark-item';
 
   readonly type = BookmarkTypes.LINK;
 
-  // private icon: HTMLElement;
   private controller?: AbortController;
   private content: HTMLElement;
   private link: HTMLLinkElement;
-  private status: HTMLButtonElement;
-  private checkbox: HTMLInputElement;
+  private controls: BookmarkControlsElement;
   private _bookmark: IBookmarkNode;
   private _valid: boolean;
 
@@ -32,14 +30,12 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
     this.template = <HTMLElement>template.cloneNode(true);
     this.link = this.template.querySelector('[name="link"]');
     this.content = this.template.querySelector('[name="content"]');
-    this.status = this.template.querySelector('[name="status"]');
-    this.checkbox = this.template.querySelector('[name="mark"]');
-    // this.icon = this.template.querySelector('[name="icon"]');
+    this.controls = this.template.querySelector('[name="controls"]');
   }
 
   protected eventListeners(): void {
-    this.status.addEventListener('click', () => this.checkBookmark());
-    this.checkbox.addEventListener('change', () => this.onSelectionChange());
+    this.controls.sync.addEventListener('click', () => this.checkBookmark());
+    this.controls.checkbox.addEventListener('change', () => this.onSelectionChange());
   }
 
   shift(px: number) {
@@ -51,35 +47,31 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
   }
 
   reset() {
-    this.status.classList.remove(...Object.keys(STATUSES));
+    this.controls.reset;
   }
 
   select() {
-    if (!this.checkbox.disabled) {
-      this.checkbox.checked = true;
+    if (!this.controls.checkbox.disabled) {
+      this.controls.checkbox.checked = true;
       this.onSelectionChange();
     }
   }
 
   unselect() {
-    this.checkbox.checked = false;
+    this.controls.checkbox.checked = false;
   }
 
   async checkBookmark(timeout?: number) {
-    if (!this.status.disabled) {
+    if (!this.controls.sync.disabled) {
       const settings = timeout ? null : await SettingsService.get();
 
-      this.status.disabled = true;
-      this.reset();
-      this.startAnimations(this.status.getElementsByTagName('animate'));
+      this.controls.sync.disabled = true;
+      this.controls.animating = true;
 
       const response = await this.requestURL(this._bookmark.url, (timeout || settings.timeout) * 1000);
-      const status = this.getStatus(response);
 
-      this.stopAnimations(this.status.getElementsByTagName('animate'));
-      this.status.classList.toggle(status.class);
-      this.status.setAttribute('title', status.title);
-      this.status.disabled = false;
+      this.controls.animating = false;
+      this.controls.status = this.getStatus(response);
       this._valid = response.ok;
     }
   }
@@ -93,14 +85,10 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
     if (!value.title) {
       this.link.classList.add('italic', 'transparent');
     }
-
-    // if (value.url) {
-    //   this.setFavicon(value.url);
-    // }
   }
 
   set disabled(value: boolean) {
-    this.checkbox.disabled = value;
+    this.controls.checkbox.disabled = value;
     super.disabled = value;
   }
 
@@ -109,7 +97,7 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
   }
 
   private onSelectionChange() {
-    if (this.checkbox.checked) {
+    if (this.controls.checkbox.checked) {
       BookmarkManager.select(this._bookmark);
     } else {
       BookmarkManager.unselect(this._bookmark.id);
@@ -118,6 +106,8 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
 
   private async requestURL(url: string, timeout: number): Promise<IBookmarkResponse> {
     if (url.match(/^chrome/g,)) {
+      await delay(500);
+
       return { ok: false, status: -3, statusText: 'Scheme "chrome" is not supported.' };
     }
 
@@ -143,22 +133,6 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
       return { ok: false, status: error === 'timeout' ? -1 : -2, statusText: 'Failed to request URL' };
     } finally {
       await delay(500);
-    }
-  }
-
-  private startAnimations(animateElements: HTMLCollectionOf<SVGAnimateElement>) {
-    for (let i = 0; i < animateElements.length; i++) {
-      const element = animateElements.item(i);
-
-      element.beginElement();
-    }
-  }
-
-  private stopAnimations(animateElements: HTMLCollectionOf<SVGAnimateElement>) {
-    for (let i = 0; i < animateElements.length; i++) {
-      const element = animateElements.item(i);
-
-      element.endElement();
     }
   }
 
@@ -188,6 +162,7 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
 
   // private async setFavicon(url: string) {
   //   const matches = url.match(domainRegex);
+  // const domainRegex = /^(?:https?:\/\/)?(?:[^@/\n]+@)?(?:www\.)?([^:/?\n]+)/im;
 
   //   if (matches) {
   //     const domain = matches[0];

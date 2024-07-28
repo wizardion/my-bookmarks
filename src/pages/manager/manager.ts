@@ -2,25 +2,12 @@ import 'styles/themes/light.scss';
 import './assets/styles/body.scss';
 import './assets/styles/manager.scss';
 
-import { BookmarkElement } from 'components/bookmark/bookmark.component';
 import { BookmarkRender } from 'services/bookmarks-render.service';
-import { BookmarkFolderElement } from 'components/bookmark-folder/bookmark-folder.component';
 import { BookmarkToolbarElement } from 'components/toolbar/toolbar.component';
 import { Debounce } from 'services/debounce.service';
 import { SettingsService } from 'services/settings.service';
+import { whenDefined } from 'components';
 
-
-function whenDefined(): Promise<CustomElementConstructor[]> {
-  customElements.define(BookmarkElement.selector, BookmarkElement);
-  customElements.define(BookmarkFolderElement.selector, BookmarkFolderElement);
-  customElements.define(BookmarkToolbarElement.selector, BookmarkToolbarElement);
-
-  return Promise.all([
-    customElements.whenDefined(BookmarkElement.selector),
-    customElements.whenDefined(BookmarkFolderElement.selector),
-    customElements.whenDefined(BookmarkToolbarElement.selector)
-  ]);
-}
 
 function debounceScroll(element: HTMLElement) {
   let dataScroll = false;
