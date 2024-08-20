@@ -2,26 +2,31 @@
   <fieldset>
     <label>
       <input type="checkbox" name="expand-all" disabled>
-      <span class="margin-right">Expand all</span>
+      <span>Expand all</span>
     </label>
-  </fieldset>
-
-  <fieldset class="extent relative margin-left">
-    <button name="cancel-check" class="warn" hidden>
-      <include src="./assets/images/cancel.svg"></include>
-    </button>
+    <label hidden>
+      <button name="cancel-check" class="warn checkbox">
+        <include src="./assets/images/cancel.svg"></include>
+      </button>
+      <span>Cancel</span>
+    </label>
     <label>
-      <button name="check-bookmarks" disabled>
+      <button name="check-bookmarks" class="checkbox" disabled>
         <include src="./assets/images/check.svg"></include>
       </button>
-      <span>Check all</span>
+      <span>Check&nbsp;</span>
     </label>
     <label>
-      <button name="remove-bookmarks" disabled>
+      <button name="remove-bookmarks" class="checkbox" disabled>
         <include src="./assets/images/check.svg"></include>
       </button>
       <span>Remove selected</span>
+      <span name="remove-count" class="badge"></span>
     </label>
+  </fieldset>
+
+  <fieldset class="extent relative right padding-right">
+    <nav-pagination id="nav-pagination" name="nav-pagination"></nav-pagination>
   </fieldset>
 
   <fieldset class="right">

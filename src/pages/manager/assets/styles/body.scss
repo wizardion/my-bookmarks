@@ -1,20 +1,15 @@
-// @use 'colors';
-
 html,
 body {
   background: var(--body-color);
 
-  // width: 600px;
-  // height: 270px;
   border: 0;
   margin: 0px;
   padding: 0px;
 
-  // overflow: hidden;
-  // font: 15px 'Roboto', 'Ubuntu', Sans-Serif;
   font-size: 15px;
   font-family: "Google Sans Text", 'Roboto', 'Ubuntu', Sans-Serif;
   font-weight: 400;
+  color: var(--base-text-color);
 }
 
 .list-view .list-content,

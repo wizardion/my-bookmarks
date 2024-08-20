@@ -6,6 +6,7 @@
 bookmark-item,
 bookmark-folder {
   display: flex;
+  position: relative;
 }
 
 .bookmark-line:last-child {
@@ -32,11 +33,70 @@ bookmark-folder {
   overflow: hidden;
 }
 
-bookmark-controls:has(input[type=checkbox]:checked) + .bookmark-item {
+.bookmark-item svg {
+  fill: var(--icon-background-color);
+}
+
+.bookmark-controls .status svg .unsuccessful,
+.bookmark-controls .status svg .success,
+.bookmark-controls .status svg .forbidden,
+.bookmark-controls .status svg .error,
+.bookmark-controls .status svg .redirected,
+.bookmark-controls .status svg .timeout,
+.bookmark-controls .status svg .lost,
+
+.bookmark-controls .status.success svg .check,
+.bookmark-controls .status.unsuccessful svg .check,
+.bookmark-controls .status.forbidden svg .check,
+.bookmark-controls .status.error svg .check,
+.bookmark-controls .status.redirected svg .check,
+.bookmark-controls .status.timeout svg .check,
+.bookmark-controls .status.lost svg .check {
+  display: none;
+}
+
+.bookmark-controls .status.success svg .success,
+.bookmark-controls .status.unsuccessful svg .unsuccessful,
+.bookmark-controls .status.forbidden svg .forbidden,
+.bookmark-controls .status.error svg .error,
+.bookmark-controls .status.redirected svg .redirected,
+.bookmark-controls .status.timeout svg .timeout,
+.bookmark-controls .status.lost svg .lost {
+  display: inherit;
+}
+
+.bookmark-controls .status:disabled {
+  background-color: transparent;
+}
+
+.bookmark-controls .status svg .check {
+  stroke: var(--control-bright-color);
+}
+
+.bookmark-controls .status:disabled svg .check {
+  stroke: var(--control-inactive-text-color);
+}
+
+.bookmark-controls .status svg .lost {
+  fill: var(--unsuccessful-color);
+}
+
+.bookmark-controls .status svg .forbidden {
+  fill: var(--warning-color);
+}
+
+.bookmark-controls .status svg .unsuccessful,
+.bookmark-controls .status svg .error,
+.bookmark-controls .status svg .redirected,
+.bookmark-controls .status svg .timeout {
+  fill: var(--dangerous-color);
+}
+
+.bookmark-controls:has(input[type=checkbox]:checked) + .bookmark-item {
   background-color: var(--control-activated-background-color);
 }
 
-bookmark-controls:has(input[type=checkbox]:checked) + .bookmark-item a {
+.bookmark-controls:has(input[type=checkbox]:checked) + .bookmark-item a {
   color: var(--base-highlight-color);
   text-decoration: underline;
 }

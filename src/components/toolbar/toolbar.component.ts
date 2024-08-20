@@ -1,13 +1,16 @@
 import './assets/styles/toolbar.component.scss';
 
 import { BaseElement } from '../base/base.component';
-import { BookmarkElement } from 'components/bookmark/bookmark.component';
-import { BookmarkRender } from 'services/bookmarks-render.service';
+import { BookmarkRenderService } from 'services/bookmarks-render.service';
 import { IToolbarForm } from './models/toolbar.models';
-import { delay } from 'core/index';
-import { BookmarkManager } from 'services/bookmark-manager.service';
+import { BookmarkManagerService } from 'services/bookmark-manager.service';
 import { SettingsService } from 'services/settings.service';
-import { ISettings } from 'services/models/settings.models';
+import { IBookmarkElement } from 'components/models/bookmark.models';
+import { UrlService } from 'services/url.service';
+import { IBookmarkNode, IBookmarkStatus } from 'core/models/core.models';
+import { delay, BookmarkTypes } from 'core';
+import { DialogElement } from 'components/dialog/dialog.component';
+import { ToolbarKeyboardService } from 'services/toolbar-keyboards.service';
 
 
 const template: DocumentFragment = BaseElement.template({
@@ -17,11 +20,12 @@ const template: DocumentFragment = BaseElement.template({
 export class BookmarkToolbarElement extends BaseElement {
   static readonly selector = 'bookmark-toolbar';
 
-  protected form: IToolbarForm;
+  public form: IToolbarForm;
+  protected processing: boolean;
   protected canceled: boolean;
-  protected _settings: ISettings;
-  protected requests: BookmarkElement[];
-  protected readonly chunkSize: number = 10;
+  protected wakeLock: WakeLockSentinel;
+
+  protected readonly maxRequests: number = 100;
 
   constructor() {
     super();
@@ -32,150 +36,246 @@ export class BookmarkToolbarElement extends BaseElement {
       check: this.template.querySelector('[name="check-bookmarks"]'),
       cancel: this.template.querySelector('[name="cancel-check"]'),
       remove: this.template.querySelector('[name="remove-bookmarks"]'),
+      removeCount: this.template.querySelector('[name="remove-count"]'),
       timeout: this.template.querySelector('[name="timeout-range"]'),
       timeoutText: this.template.querySelector('[name="timeout-text"]'),
       progressBar: this.template.querySelector('[name="progress-bar"]'),
+      pagination: this.template.querySelector('[name="nav-pagination"]')
     };
   }
 
-  protected eventListeners(): void {
+  protected async eventListeners() {
+    const settings = await SettingsService.get();
+
+    this.form.expand.checked = settings.recursive;
+    this.form.timeout.value = settings.timeout.toString();
+    this.form.timeoutText.innerText = settings.timeout + ' s';
+
     this.form.expand.addEventListener('change', () => this.onRecursiveChange());
-    this.form.check.addEventListener('click', () => this.checkAllBookmarks(BookmarkRender.bookmarks));
+    this.form.check.addEventListener('click', () => this.checkAllBookmarks());
     this.form.timeout.addEventListener('input', () => this.onTimeoutChange());
-
     this.form.cancel.addEventListener('click', () => this.cancelRequests());
-    this.form.remove.addEventListener('click', () => this.removeSelected());
+    this.form.remove.addEventListener('click', () => this.onRemove());
 
-    BookmarkManager.addEventListener('select', () => this.onSelectionChange());
+    BookmarkManagerService.timeout = settings.timeout;
+    BookmarkManagerService.addEventListener('select', () => this.onSelectionChange());
+    window.addEventListener('rendered', () => this.onItemsRendered());
+    ToolbarKeyboardService.watch(this);
   }
 
-  protected async checkAllBookmarks(bookmarks: BookmarkElement[]) {
-    const chunks = Array.from({ length: Math.ceil(bookmarks.length / this.chunkSize) }, (_, i) =>
-      bookmarks.slice(i * this.chunkSize, i * this.chunkSize + this.chunkSize)
-    );
-
-    bookmarks.forEach(b => b.reset());
+  protected async checkAllBookmarks() {
     await this.startProgress();
 
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      const promises: Promise<void>[] = [];
+    const currentPage = this.form.pagination.page;
+    const settings = await SettingsService.get();
+    const total = Array.from(BookmarkManagerService.bookmarks.values()).filter(b => !!b.url).length;
+    let processed = 0;
 
-      this.progress(i * 10 + chunk.length, bookmarks.length);
+    BookmarkManagerService.timeout = settings.timeout;
+    BookmarkManagerService.bookmarks.forEach(b => b.status = null);
 
-      for (let j = 0; j < chunk.length && !this.canceled; j++) {
-        const element = chunk[j];
-        const promise = element.checkBookmark(this._settings.timeout);
+    for (let i = 1; i <= this.form.pagination.pageCount && !this.canceled; i++) {
+      BookmarkRenderService.start = (i - 1) * BookmarkRenderService.count;
+      await BookmarkRenderService.render();
+      this.form.pagination.setPage(i);
 
-        promises.push(promise);
-        promise.finally(() => this.processResult(element));
-        this.requests.push(element);
+      const items = Array.from(BookmarkRenderService.items.values()).filter(i => i.type === BookmarkTypes.LINK);
 
-        await delay(100);
-      }
+      await this.requestWakeLock();
+      await this.checkItems(items, total, processed);
 
-      await Promise.all(promises);
+      processed += items.length;
     }
 
+    if (!this.canceled) {
+      await delay(1000);
+    }
+
+    BookmarkRenderService.start = (currentPage - 1) * BookmarkRenderService.count;
+    await BookmarkRenderService.render();
+    this.form.pagination.setPage(currentPage);
+    console.clear();
+
     await this.finishProgress();
+  }
+
+  protected async checkItems(items: IBookmarkNode[], total: number, processed: number) {
+    let requests: { resolved: boolean, promise: Promise<IBookmarkStatus> }[] = [];
+
+    for (let i = 0; i < items.length && !this.canceled; i++) {
+      const item = items[i];
+      const element = document.getElementById(item.id.toString()) as IBookmarkElement;
+      const request = { resolved: false, promise: element.checkBookmark() };
+
+      this.progress((i + 1) + processed, total);
+
+      requests.push(request);
+      request.promise
+        .then((r) => this.processResult(item.id, r))
+        .then(() => request.resolved = true);
+
+      if (this.canceled) {
+        break;
+      }
+
+      if (requests.length >= this.maxRequests) {
+        while (requests.length >= this.maxRequests - 10) {
+          await delay(800);
+          requests = requests.filter((r) => !r.resolved);
+        }
+      }
+
+      await delay(50);
+    }
+
+    return Promise.all(requests.map(i => i.promise));
   }
 
   set disabled(value: boolean) {
     this.form.expand.disabled = value;
     this.form.check.disabled = value;
     this.form.timeout.disabled = value;
+    this.form.pagination.disabled = value;
 
     super.disabled = value;
   }
 
-  set settings(value: ISettings) {
-    this._settings = value;
-
-    this.form.expand.checked = value.recursive;
-    this.form.timeout.value = value.timeout.toString();
-    this.form.timeoutText.innerText = value.timeout + ' s';
+  set disabledCheck(value: boolean) {
+    this.form.check.disabled = value;
   }
 
-  private progress(processed: number, total: number): number {
-    const progress = Math.round(((100 * processed) / total));
+  private progress(processed: number, total: number) {
+    const progress = Math.floor(((100 * processed) / total));
 
     this.form.progressBar.style.width = progress + '%';
+  }
 
-    return progress;
+  private async startProgress(cancelable: boolean = true) {
+    this.form.progressBar.hidden = false;
+    this.form.remove.disabled = true;
+    this.processing = true;
+    this.disabled = true;
+
+    if (cancelable) {
+      this.form.check.parentElement.hidden = true;
+      this.form.cancel.parentElement.hidden = false;
+      this.canceled = false;
+    } else {
+      BookmarkRenderService.disableItems();
+    }
+
+    await delay();
   }
 
   private async finishProgress(wait = true) {
     const animations = this.form.progressBar.getAnimations();
+    const selectedItems = BookmarkManagerService.selection.size;
 
     if (wait && animations?.length > 0) {
       await animations[0].finished;
     }
 
     this.disabled = false;
-    this.form.check.hidden = false;
-    this.form.cancel.hidden = true;
+    this.processing = false;
+    this.form.check.parentElement.hidden = false;
+    this.form.cancel.parentElement.hidden = true;
+    this.form.cancel.disabled = false;
     this.form.progressBar.hidden = true;
     this.form.progressBar.style.width = '0%';
+    this.form.remove.disabled = selectedItems === 0;
+
+    await this.wakeLock?.release();
   }
 
-  private async startProgress() {
-    this.form.check.hidden = true;
-    this.form.cancel.hidden = false;
-    this.form.progressBar.hidden = false;
-    this.disabled = true;
-    this.canceled = false;
-    this.requests = [];
+  private processResult(id: number, status: IBookmarkStatus) {
+    const item = BookmarkRenderService.items.get(id);
 
-    await delay();
-  }
+    if (!status.ok && status.className !== 'forbidden') {
+      const bookmark = document.getElementById(id.toString()) as IBookmarkElement;
 
-  private processResult(bookmark: BookmarkElement) {
-    if (!bookmark.valid) {
       bookmark.select();
+      item.selected = true;
     }
+
+    item.status = status;
   }
 
   private cancelRequests() {
     this.canceled = true;
-    this.form.check.hidden = false;
-    this.form.cancel.hidden = true;
+    this.form.cancel.disabled = true;
     this.form.progressBar.hidden = true;
 
-    this.requests?.forEach(request => request.abort());
+    // this.requests?.forEach(request => request.abort());
   }
 
   private onSelectionChange() {
-    this.form.remove.disabled = BookmarkManager.selection.size === 0;
+    const size = BookmarkManagerService.selection.size;
+
+    this.form.remove.disabled = this.processing || size === 0;
+    this.form.removeCount.hidden = size === 0;
+    this.form.removeCount.innerText = size.toString();
   }
 
   private async onRecursiveChange() {
-    this._settings = await SettingsService.get();
-    this._settings.recursive = this.form.expand.checked;
+    const settings = await SettingsService.get();
 
-    BookmarkRender.recursive = this._settings.recursive;
+    settings.recursive = this.form.expand.checked;
 
-    BookmarkRender.render();
-    SettingsService.set(this._settings);
+    SettingsService.set(settings);
+    UrlService.set({ recursive: settings.recursive, page: null });
   }
 
   private async onTimeoutChange() {
+    const settings = await SettingsService.get();
     const value = Number(this.form.timeout.value);
     const timeout = Math.max(value, 1);
 
+    settings.timeout = timeout;
+    BookmarkManagerService.timeout = settings.timeout;
+
     this.form.timeoutText.innerText = timeout + ' s';
-
-    this._settings = await SettingsService.get();
-    this._settings.timeout = timeout;
-
-    SettingsService.set(this._settings);
+    SettingsService.set(settings);
   }
 
-  private async removeSelected() {
-    const message = 'Please confirm your selection is correct.\nAttention! This action is irreversible!';
-    //'\nThe page will be reloaded.'
-
-    if (window.confirm(message)) {
-      await BookmarkManager.removeSelected();
+  private async onItemsRendered() {
+    if (!this.processing) {
+      this.form.check.disabled = !Array
+        .from(BookmarkRenderService.items.values()).some(i => i.type === BookmarkTypes.LINK);
     }
+  }
+
+  private async requestWakeLock() {
+    try {
+      this.wakeLock?.release();
+      this.wakeLock = await navigator.wakeLock.request();
+    } catch (err) {
+      console.error(`${err.name}, ${err.message}`);
+    }
+  }
+
+  private async onRemove() {
+    this.form.pagination.disabled = true;
+
+    const dialog = document.getElementById('dialog') as DialogElement;
+    const message = 'Please confirm that your selection is correct.\nAttention! This action is irreversible!';
+    const ok = await dialog.open('Attention', message);
+
+    if (ok) {
+      const { page } = await UrlService.get();
+
+      await this.startProgress(false);
+      await BookmarkManagerService.removeSelected((i, t) => this.progress(i, t));
+
+      if (page > 1 && await BookmarkRenderService.getSize() === 0) {
+        UrlService.set({ page: Math.min(page - 1, 0) });
+      } else {
+        await BookmarkRenderService.render();
+        this.form.pagination.setPage(page, await BookmarkRenderService.total);
+      }
+
+      await this.finishProgress();
+    }
+
+    this.form.pagination.disabled = false;
   }
 }
