@@ -122,7 +122,7 @@ export class BookmarkManagerService {
         headers: new Headers({
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Request-Method': 'GET',
-          'Access-Control-Request-Headers': 'Content-Type, Authorization',
+          'Access-Control-Request-Headers': 'content-type,x-pingother',
           'Cache': 'no-cache'
         }),
       });
@@ -153,19 +153,13 @@ export class BookmarkManagerService {
       const id = setTimeout(() => controller.abort('timeout'), this.timeout * 1000);
       const response = await fetch(url, {
         method: 'GET',
-        // method: 'HEAD',
-        // method: 'OPTIONS',
         cache: 'no-cache',
         mode: 'cors',
-        // mode: 'no-cors',
         signal: controller.signal,
         headers: new Headers({
           'Access-Control-Allow-Origin': '*',
           'Access-Control-Request-Method': 'GET',
-          'Access-Control-Request-Headers': 'Content-Type, Authorization',
-          // 'Access-Control-Allow-Methods': 'GET',
-          // 'Access-Control-Allow-Headers': 'Content-Type',
-          // 'Access-Control-Allow-Credentials': 'true',
+          'Access-Control-Request-Headers': 'content-type,x-pingother',
           'Cache': 'no-cache'
         }),
       });
