@@ -1,63 +1,80 @@
 import { BookmarkElement } from 'components/bookmark/bookmark.component';
 import { BookmarkFolderElement } from 'components/bookmark-folder/bookmark-folder.component';
-import { BookmarkTypes } from 'components/models/bookmark.models';
+import { BookmarkManagerService } from 'services/bookmark-manager.service';
 import { IBookmarkNode } from 'core';
+import { IBookmarkElement } from 'components/models/bookmark.models';
 
 
-export class BookmarkRender {
+export class BookmarkRenderService {
   static levelId: string;
   static recursive: boolean;
   static content: HTMLDivElement;
-  static bookmarks: BookmarkElement[] = [];
+  static items = new Map<number, IBookmarkNode>();
 
-  public static async render() {
-    const bookmarks = await chrome.bookmarks.getChildren(this.levelId);
-    const fragment = document.createDocumentFragment();
+  static start: number = 0;
+  static count: number = 0;
+  static total: number = 0;
 
-    for (let i = 0; i < bookmarks.length; i++) {
-      const item = bookmarks[i];
+  public static async render(rebind?: boolean) {
+    const data = await BookmarkManagerService.loadData(this.levelId, this.start, this.count, this.recursive, rebind);
 
-      await BookmarkRender.renderLevel(item, fragment);
-    }
+    this.total = BookmarkManagerService.bookmarks.size;
+    this.items.clear();
 
-    this.clear();
-    this.content.appendChild(fragment);
-  }
+    if (data.length) {
+      const fragment = document.createDocumentFragment();
 
-  public static async clear() {
-    this.content.innerHTML = '';
-  }
+      for (let i = 0; i < data.length; i++) {
+        const node = data[i];
+        const line = document.createElement('div');
+        const bookmark = node.url ? this.renderBookmark(node) : this.renderFolder(node);
 
-  private static async renderLevel(item: IBookmarkNode, content: DocumentFragment | HTMLElement, level = 0) {
-    const line = document.createElement('div');
-    const bookmark = item.url ? BookmarkRender.renderBookmark(item) : BookmarkRender.renderFolder(item);
+        bookmark.shift(node.level * 20);
+        line.classList.add('bookmark-line');
+        line.appendChild(bookmark);
 
-    bookmark.shift(level * 20);
-    line.classList.add('bookmark-line');
-    line.appendChild(bookmark);
-    content.appendChild(line);
-
-    if (bookmark.type === BookmarkTypes.LINK) {
-      this.bookmarks.push(bookmark);
-    }
-
-    if (this.recursive && bookmark.type === BookmarkTypes.FOLDER) {
-      const children = await chrome.bookmarks.getChildren(item.id);
-
-      for (let j = 0; j < children.length; j++) {
-        const element = children[j];
-
-        await this.renderLevel(element, content, level + 1);
+        fragment.appendChild(line);
+        this.items.set(node.id, node);
       }
+
+      this.clear();
+      this.content.appendChild(fragment);
+    } else {
+      this.clear('<i class="mute margin-left">No bookmarks here.</i>');
     }
 
-    return line;
+    window.dispatchEvent(new CustomEvent<number>('rendered', { detail: this.total }));
   }
 
-  private static renderFolder(node: chrome.bookmarks.BookmarkTreeNode): BookmarkFolderElement {
+  public static async clear(message: string = '') {
+    this.content.innerHTML = message;
+  }
+
+  public static async getSize(): Promise<number> {
+    const data = await BookmarkManagerService.loadData(this.levelId, this.start, this.count, this.recursive);
+
+    return data?.length || 0;
+  }
+
+  public static disableItems(value: boolean = true) {
+    this.items.forEach((item) => {
+      const element = document.getElementById(item.id.toString()) as IBookmarkElement;
+
+      if (element) {
+        element.disabled = value;
+      }
+    });
+  }
+
+  private static renderFolder(node: IBookmarkNode): BookmarkFolderElement {
     const item = document.createElement(BookmarkFolderElement.selector) as BookmarkFolderElement;
 
-    item.setBookmark(node);
+    item.id = node.id.toString();
+    item.url = `?id=${item.id}`;
+    item.title = node.title;
+    item.selected = node.selected;
+    item.open = this.recursive;
+    item.setStatus(node.status);
 
     return item;
   }
@@ -65,7 +82,11 @@ export class BookmarkRender {
   private static renderBookmark(node: IBookmarkNode): BookmarkElement {
     const item = document.createElement(BookmarkElement.selector) as BookmarkElement;
 
-    item.setBookmark(node);
+    item.id = node.id.toString();
+    item.url = node.url;
+    item.title = node.title;
+    item.selected = node.selected;
+    item.setStatus(node.status);
 
     return item;
   }

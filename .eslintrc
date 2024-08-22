@@ -32,7 +32,8 @@
         "IDBTransactionMode": "readonly",
         "NodeJS": "readonly",
         "CustomElementConstructor": "readonly",
-        "HTMLCollectionOf": "readonly"
+        "HTMLCollectionOf": "readonly",
+        "WakeLockSentinel": "readonly"
       },
       "rules": {
         "no-bitwise": "error",

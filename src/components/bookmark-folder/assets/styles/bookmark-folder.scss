@@ -1,0 +1,8 @@
+svg .open,
+bookmark-folder.open svg .close {
+  display: none;
+}
+
+bookmark-folder.open svg .open {
+  display: inherit;
+}

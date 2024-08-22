@@ -1,16 +1,20 @@
-import { IBookmarkNode } from 'core';
+import { BookmarkTypes, IBookmarkStatus } from 'core';
 
 
 export interface IBookmarkElement extends HTMLElement {
   type: BookmarkTypes;
 
-  select(): void;
+  get disabled(): boolean;
+
+  set title(value: string);
+  set url(value: string);
+  set disabled(value: boolean);
+  set selected(value: boolean);
+
+  reset(): void;
+  select(value?: boolean): void;
   shift(px: number): void;
-
-  setBookmark(value: IBookmarkNode): void;
-}
-
-export enum BookmarkTypes {
-  FOLDER = 0,
-  LINK = 1
+  setStatus(value: IBookmarkStatus): void;
+  setFocus(value: 'checkbox' | 'status'): void;
+  checkBookmark(): Promise<IBookmarkStatus>;
 }
