@@ -94,7 +94,7 @@ export class BookmarkToolbarElement extends BaseElement {
     BookmarkRenderService.start = (currentPage - 1) * BookmarkRenderService.count;
     await BookmarkRenderService.render();
     this.form.pagination.setPage(currentPage);
-    console.clear();
+    setTimeout(() => console.clear(), 3000);
 
     await this.finishProgress();
   }
