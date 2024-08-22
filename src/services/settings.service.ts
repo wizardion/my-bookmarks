@@ -14,13 +14,18 @@ export class SettingsService {
   private static name = 'SettingsService';
 
   static async get(): Promise<ISettings> {
-    const settings = this.settings || ((await chrome.storage.local.get(this.name) || {})[this.name]) as ISettings;
+    let settings = this.settings
+      || ((await chrome.storage.local.get(this.name) || {})[this.name]) as ISettings;
+
+    if (!settings) {
+      settings = defaultSettings;
+    }
 
     return {
-      recursive: settings.recursive || defaultSettings.recursive,
-      timeout: settings.timeout || defaultSettings.timeout,
-      size: settings.size  || defaultSettings.size,
-      page: settings.page || defaultSettings.page,
+      recursive: settings.recursive,
+      timeout: settings.timeout,
+      size: settings.size,
+      page: settings.page,
     };
   }
 

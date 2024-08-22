@@ -27,7 +27,12 @@ const icons = {
       { from: 'app-icon48.png', to: 'icons/icon48.png'},
       { from: 'app-icon128.png', to: 'icons/icon128.png'},
     ],
-    dark: [],
+    dark: [
+      { from: 'app-icon16.png', to: 'icons/icon16.png'},
+      { from: 'app-icon32.png', to: 'icons/icon32.png'},
+      { from: 'app-icon48.png', to: 'icons/icon48.png'},
+      { from: 'app-icon128.png', to: 'icons/icon128.png'},
+    ],
   },
   develop: {
     light: [
@@ -178,7 +183,8 @@ module.exports = {
     }
   },
   plugins: [
-    new CleanWebpackPlugin(production? { cleanAfterEveryBuildPatterns: ['**/*']} : {}),
+    // new CleanWebpackPlugin(production? { cleanAfterEveryBuildPatterns: ['**/*']} : {}),
+    new CleanWebpackPlugin({ cleanOnceBeforeBuildPatterns: ['**/*'] }),
     new CopyWebpackPlugin({
       patterns: [].concat(
         (production ? icons.production : icons.develop).light
