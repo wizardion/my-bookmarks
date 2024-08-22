@@ -55,26 +55,26 @@ export class BookmarkManagerService {
     const ids = Array.from(this.selection.values());
 
     for (let i = 0; i < ids.length; progress(++i, total)) {
-      const [bookmark] = await chrome.bookmarks.get(ids[i].toString());
+      const bookmark = await this.getBookmark(ids[i]);
 
-      if (bookmark && this.bookmarks.has(Number(bookmark.id))) {
+      if (bookmark && this.bookmarks.has(bookmark.id)) {
         if (BookmarkRenderService.recursive && !bookmark.url) {
-          const subItems = await this.getBookmarks(bookmark.id, true);
+          const subItems = await this.getBookmarks(bookmark.id.toString(), true);
           const selected = subItems.filter(i => this.selection.has(Number(i.id)));
 
           if (selected.length === subItems.length) {
-            // await chrome.bookmarks.removeTree(bookmark.id);
+            await chrome.bookmarks.removeTree(bookmark.id.toString());
             selected.forEach(i => this.bookmarks.delete(Number(i.id)));
             this.bookmarks.delete(Number(bookmark.id));
           } else {
-            this.bookmarks.get(Number(bookmark.id)).selected = false;
+            this.bookmarks.get(bookmark.id).selected = false;
           }
         } else if (!bookmark.url) {
-          // await chrome.bookmarks.removeTree(bookmark.id);
-          this.bookmarks.delete(Number(bookmark.id));
+          await chrome.bookmarks.removeTree(bookmark.id.toString());
+          this.bookmarks.delete(bookmark.id);
         } else {
-          // await chrome.bookmarks.remove(bookmark.id);
-          this.bookmarks.delete(Number(bookmark.id));
+          await chrome.bookmarks.remove(bookmark.id.toString());
+          this.bookmarks.delete(bookmark.id);
         }
 
         await delay(10);
@@ -82,30 +82,6 @@ export class BookmarkManagerService {
     }
 
     await delay(1250);
-    this.selection.clear();
-    this.onSelectionChange();
-  }
-
-  public static async removeSelected2(progress: (i: number, t: number) => void) {
-    const total = this.selection.size;
-    const bookmarks = await chrome.bookmarks.get(Array.from(this.selection.values()).map(i => i.toString()));
-
-    for (let i = 0; i < bookmarks.length; i++) {
-      const bookmark = bookmarks[i];
-
-      progress(i + 1, total);
-
-      if (!BookmarkRenderService.recursive && !bookmark.url) {
-        // await chrome.bookmarks.removeTree(bookmark.id);
-      } else {
-        // await chrome.bookmarks.remove(bookmark.id);
-      }
-
-      this.bookmarks.delete(Number(bookmark.id));
-    }
-
-    await delay(1250);
-
     this.selection.clear();
     this.onSelectionChange();
   }
@@ -206,7 +182,14 @@ export class BookmarkManagerService {
   }
 
   private static async getBookmarks(levelId: string, recursive?: boolean, level = 0): Promise<IBookmarkNode[]> {
-    const bookmarks = await chrome.bookmarks.getChildren(levelId);
+    let bookmarks: chrome.bookmarks.BookmarkTreeNode[];
+
+    try {
+      bookmarks = await chrome.bookmarks.getChildren(levelId);
+    } catch (error) {
+      console.log('error:', error);
+      bookmarks = [];
+    }
 
     if (recursive) {
       let results: IBookmarkNode[] = [];
@@ -238,6 +221,22 @@ export class BookmarkManagerService {
       type: i.url ? BookmarkTypes.LINK : BookmarkTypes.FOLDER,
       url: i.url
     }));
+  }
+
+  private static async getBookmark(id: number): Promise<IBookmarkNode | null> {
+    try {
+      const [item] = await chrome.bookmarks.get(id.toString());
+
+      return {
+        id: Number(item.id),
+        level: 0,
+        title: item.title,
+        type: item.url ? BookmarkTypes.LINK : BookmarkTypes.FOLDER,
+        url: item.url
+      };
+    } catch (error) {
+      return null;
+    }
   }
 
   private static getStatus(response: IBookmarkResponse): IBookmarkStatus {

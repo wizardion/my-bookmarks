@@ -77,12 +77,17 @@ whenDefined().then(async () => {
   pagination.pageSize = urlParams.size;
 
   if (urlParams.levelId !== '0' && urlParams.has('id')) {
-    const current = (await chrome.bookmarks.get(urlParams.levelId)).shift();
+    try {
+      const current = (await chrome.bookmarks.get(urlParams.levelId)).shift();
 
-    if (current && current.parentId) {
+      if (current && current.parentId) {
+        goBackLink.hidden = false;
+        goBackLink.href = current.parentId !== '0' ? `?id=${current.parentId}` : window.location.pathname;
+        currentFolder.innerText = current.title;
+      }
+    } catch (error) {
       goBackLink.hidden = false;
-      goBackLink.href = current.parentId !== '0' ? `?id=${current.parentId}` : window.location.pathname;
-      currentFolder.innerText = current.title;
+      goBackLink.href = window.location.pathname;
     }
   }
 

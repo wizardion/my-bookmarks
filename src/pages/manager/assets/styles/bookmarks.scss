@@ -100,3 +100,12 @@ bookmark-folder {
   color: var(--base-highlight-color);
   text-decoration: underline;
 }
+
+.bookmark-controls .status:disabled svg > * {
+  fill: var(--control-inactive-text-color);
+}
+
+.bookmark-controls .status:disabled svg .check {
+  fill: transparent;
+  stroke: var(--control-inactive-text-color);
+}
