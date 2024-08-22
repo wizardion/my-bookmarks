@@ -28,6 +28,7 @@ bookmark-toolbar .progress-bar {
   background-color: var(--base-bright-color);
   height: 2px;
   width: 0%;
+  min-width: 5px;
   color: white;
 
   transition: width 1250ms cubic-bezier(0, 0, 0.2, 1)

@@ -3,20 +3,21 @@
 
 <head>
   <meta charset="utf-8" />
-  <title>Notes' settings</title>
+  <title>My Bookmarks</title>
 </head>
 
-<body class="theme-light">
+<body>
   <h1 class="title">My Bookmarks</h1>
 
-  <div class="tile stick">
+  <div id="stick"></div>
+  <div class="tile stick" hidden>
     <bookmark-toolbar id="toolbar"></bookmark-toolbar>
   </div>
 
-  <div class="tile">
+  <div class="tile" hidden>
     <div class="go-back no-selection">
-      <a id="go-back" href="?id=1" hidden>
-        <include src="./assets/images/back.svg">Go back</include>
+      <a id="go-back" class="go-back" href="?id=1" hidden>
+        <include src="./assets/images/up.svg">Go up</include>
       </a>
 
       <div id="parent-folder" class="parent-folder"></div>
@@ -24,6 +25,7 @@
     <div id="bookmarks" class="bookmarks"></div>
   </div>
 
+  <dialog-element id="dialog"></dialog-element>
 </body>
 
 </html>

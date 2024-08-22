@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16">
+  <circle id="loading" cx="8" cy="8" r="7" fill="transparent" stroke-width="1">
+    <animate attributeName="r" from="0" to="8" dur="1s" begin="indefinite" repeatCount="indefinite" />
+    <animate attributeName="stroke-width" from="0.7" to="0" dur="1s" begin="indefinite" repeatCount="indefinite" />
+  </circle>
+</svg>
