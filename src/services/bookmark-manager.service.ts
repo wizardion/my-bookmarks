@@ -235,6 +235,8 @@ export class BookmarkManagerService {
         url: item.url
       };
     } catch (error) {
+      console.log('error', error);
+
       return null;
     }
   }
