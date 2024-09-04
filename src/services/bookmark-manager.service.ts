@@ -12,26 +12,28 @@ export class BookmarkManagerService {
 
   private static listeners = new Map<'select', IEventListener>();
 
-  public static select(id: number): void {
+  public static setSelection(id: number, value: boolean) {
     const bookmark = this.bookmarks.get(id);
 
     if (bookmark) {
-      bookmark.selected = true;
-      this.selection.add(id);
+      bookmark.selected = value;
+
+      if (bookmark.selected) {
+        this.selection.add(id);
+      } else {
+        this.selection.delete(id);
+      }
 
       this.onSelectionChange();
     }
   }
 
-  public static unselect(id: number): void {
-    const bookmark = this.bookmarks.get(id);
+  public static getSelectedItems() {
+    return Array.from(this.selection.values()).map(i => this.bookmarks.get(i)).filter(i => !!i.url);
+  }
 
-    if (bookmark) {
-      bookmark.selected = false;
-      this.selection.delete(id);
-
-      this.onSelectionChange();
-    }
+  public static getItems() {
+    return Array.from(this.bookmarks.values()).filter(i => !!i.url);
   }
 
   public static async loadData(
@@ -117,7 +119,9 @@ export class BookmarkManagerService {
     }
   }
 
-  public static async checkUrl(url: string): Promise<IBookmarkStatus> {
+  public static async checkUrl(url: string, level: number = 0): Promise<IBookmarkStatus> {
+    await delay(1000);
+
     if (url.match(/^chrome/g,)) {
       await delay(500);
 
@@ -157,7 +161,13 @@ export class BookmarkManagerService {
 
       return this.getStatus({ ok: response.ok, status: response.status, statusText: response.statusText });
     } catch (error) {
-      if (error === 'timeout') {
+      if (error === 'timeout' && level <= 3) {
+        await delay(15000 * (level + 1));
+
+        return this.checkUrl(url, level + 1);
+      }
+
+      if (error === 'timeout' && level > 3) {
         return this.getStatus({ ok: false, status: -1, statusText: 'Failed to request URL' });
       }
 

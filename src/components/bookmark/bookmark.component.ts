@@ -41,11 +41,8 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
     this.status.classList.remove(...Object.keys(ResponseStatuses));
   }
 
-  select(value: boolean = true) {
-    if (!this.checkbox.disabled) {
-      this.checkbox.checked = value;
-      this.onSelectionChange();
-    }
+  setSelection(value: boolean = true) {
+    this.checkbox.checked = value;
   }
 
   setStatus(value?: IBookmarkStatus): void {
@@ -112,11 +109,7 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
   }
 
   private onSelectionChange() {
-    if (this.checkbox.checked) {
-      BookmarkManagerService.select(Number(this.id));
-    } else {
-      BookmarkManagerService.unselect(Number(this.id));
-    }
+    BookmarkManagerService.setSelection(Number(this.id), this.checkbox.checked);
   }
 
   private startAnimations() {

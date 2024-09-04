@@ -6,6 +6,7 @@ export interface IToolbarForm {
   cancel: HTMLButtonElement;
   remove: HTMLButtonElement;
   removeCount: HTMLElement;
+  restCount: HTMLElement;
   expand: HTMLInputElement;
   timeout: HTMLInputElement;
   timeoutText: HTMLSpanElement;
