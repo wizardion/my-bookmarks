@@ -12,8 +12,8 @@ export interface IBookmarkElement extends HTMLElement {
   set selected(value: boolean);
 
   reset(): void;
-  select(value?: boolean): void;
   shift(px: number): void;
+  setSelection(value?: boolean): void;
   setStatus(value: IBookmarkStatus): void;
   setFocus(value: 'checkbox' | 'status'): void;
   checkBookmark(): Promise<IBookmarkStatus>;

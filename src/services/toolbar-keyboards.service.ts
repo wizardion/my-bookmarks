@@ -2,6 +2,7 @@ import { BookmarkFolderElement } from 'components/bookmark-folder/bookmark-folde
 import { BookmarkElement } from 'components/bookmark/bookmark.component';
 import { IBookmarkElement } from 'components/models/bookmark.models';
 import { BookmarkToolbarElement } from 'components/toolbar/toolbar.component';
+import { BookmarkManagerService } from 'services/bookmark-manager.service';
 import { UrlService } from 'services/url.service';
 
 
@@ -30,14 +31,15 @@ export class ToolbarKeyboardService {
         let line = predicate(this.focusedElement.parentElement) as HTMLElement;
 
         if (checked !== this.focusedElement.selected) {
-          this.focusedElement.select(checked);
+          this.focusedElement.setSelection(checked);
         }
 
         while (line && line !== last) {
           const bookmark = line.firstChild as IBookmarkElement;
 
           if (((bookmark instanceof BookmarkElement) || (bookmark instanceof BookmarkFolderElement))) {
-            bookmark.select(checked);
+            bookmark.setSelection(checked);
+            BookmarkManagerService.setSelection(Number(bookmark.id), checked);
           }
 
           line = predicate(line) as HTMLElement;
@@ -75,7 +77,8 @@ export class ToolbarKeyboardService {
       return this.selectNextItem(<HTMLElement>e.target, e.code === 'ArrowDown');
     }
 
-    if (!e.shiftKey && !this.timeout && (e.code === 'ArrowRight' || e.code === 'ArrowLeft')) {
+    if (!e.shiftKey && !this.timeout && (e.code === 'ArrowRight' || e.code === 'ArrowLeft')
+      && !this.toolbar.form.pagination.disabled) {
       const { page } = await UrlService.get();
       const step = (e.code === 'ArrowRight' ? 1 : -1);
       const id = Math.max(Math.min(page + step, this.toolbar.form.pagination.pageCount), 1);
@@ -107,17 +110,19 @@ export class ToolbarKeyboardService {
         this.direction = down;
       } else if (this.direction !== down) {
         this.direction = down;
-        this.focusedElement.select(!checked);
         this.focusedElement.setFocus('checkbox');
+        this.focusedElement.setSelection(!checked);
+        BookmarkManagerService.setSelection(Number(this.focusedElement.id), !checked);
 
         return this.focusedElement.scrollIntoView({ block: 'center', behavior: 'smooth' });
       }
 
       if (item) {
         this.focusedElement = item;
-        this.focusedElement.select(checked);
         this.focusedElement.setFocus('checkbox');
+        this.focusedElement.setSelection(checked);
         this.focusedElement.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        BookmarkManagerService.setSelection(Number(this.focusedElement.id), checked);
       }
     }
   }
@@ -131,7 +136,8 @@ export class ToolbarKeyboardService {
     for (let i = 0; i < items.length; i++) {
       const item = items[i] as IBookmarkElement;
 
-      item.select();
+      item.setSelection();
+      BookmarkManagerService.setSelection(Number(item.id), true);
     }
   }
 

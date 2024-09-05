@@ -10,28 +10,31 @@ export class BookmarkManagerService {
   static bookmarks: Map<number, IBookmarkNode>;
   static timeout?: number;
 
+  private static signals: AbortController[] = [];
   private static listeners = new Map<'select', IEventListener>();
 
-  public static select(id: number): void {
+  public static setSelection(id: number, value: boolean) {
     const bookmark = this.bookmarks.get(id);
 
     if (bookmark) {
-      bookmark.selected = true;
-      this.selection.add(id);
+      bookmark.selected = value;
+
+      if (bookmark.selected) {
+        this.selection.add(id);
+      } else {
+        this.selection.delete(id);
+      }
 
       this.onSelectionChange();
     }
   }
 
-  public static unselect(id: number): void {
-    const bookmark = this.bookmarks.get(id);
+  public static getSelectedItems() {
+    return Array.from(this.selection.values()).map(i => this.bookmarks.get(i)).filter(i => !!i.url);
+  }
 
-    if (bookmark) {
-      bookmark.selected = false;
-      this.selection.delete(id);
-
-      this.onSelectionChange();
-    }
+  public static getItems() {
+    return Array.from(this.bookmarks.values()).filter(i => !!i.url);
   }
 
   public static async loadData(
@@ -90,6 +93,8 @@ export class BookmarkManagerService {
     try {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort('timeout'), this.timeout * 1000);
+
+      this.signals.push(controller);
       const response = await fetch(url, {
         method: 'GET',
         cache: 'no-cache',
@@ -111,13 +116,17 @@ export class BookmarkManagerService {
 
       return this.getStatus({ ok: response.ok, status: response.status, statusText: response.statusText });
     } catch (error) {
+      if (error === 'stop') {
+        return this.getStatus({ ok: false, status: -5, statusText: 'Canceled' });
+      }
+
       return this.getStatus({
         ok: false, status: error === 'timeout' ? -1 : -2, statusText: 'Failed to request URL'
       });
     }
   }
 
-  public static async checkUrl(url: string): Promise<IBookmarkStatus> {
+  public static async checkUrl(url: string, level: number = 0): Promise<IBookmarkStatus> {
     if (url.match(/^chrome/g,)) {
       await delay(500);
 
@@ -127,6 +136,8 @@ export class BookmarkManagerService {
     try {
       const controller = new AbortController();
       const id = setTimeout(() => controller.abort('timeout'), this.timeout * 1000);
+
+      this.signals.push(controller);
       const response = await fetch(url, {
         method: 'GET',
         cache: 'no-cache',
@@ -157,7 +168,17 @@ export class BookmarkManagerService {
 
       return this.getStatus({ ok: response.ok, status: response.status, statusText: response.statusText });
     } catch (error) {
-      if (error === 'timeout') {
+      if (error === 'stop') {
+        return this.getStatus({ ok: false, status: -5, statusText: 'Canceled' });
+      }
+
+      if (error === 'timeout' && level <= 3) {
+        await delay(15000 * (level + 1));
+
+        return this.checkUrl(url, level + 1);
+      }
+
+      if (error === 'timeout' && level > 3) {
         return this.getStatus({ ok: false, status: -1, statusText: 'Failed to request URL' });
       }
 
@@ -165,6 +186,16 @@ export class BookmarkManagerService {
     } finally {
       await delay(500);
     }
+  }
+
+  public static abort() {
+    for (let i = 0; i < this.signals.length; i++) {
+      const signal = this.signals[i];
+
+      signal.abort('stop');
+    }
+
+    this.signals = [];
   }
 
   public static addEventListener(type: 'select', listener: IEventListener): void {
@@ -235,6 +266,8 @@ export class BookmarkManagerService {
         url: item.url
       };
     } catch (error) {
+      console.log('error', error);
+
       return null;
     }
   }
@@ -242,6 +275,10 @@ export class BookmarkManagerService {
   private static getStatus(response: IBookmarkResponse): IBookmarkStatus {
     if (response.ok) {
       return { ok: true, code: ResponseStatusCodes.ok, className: 'success', title: ResponseStatuses.success };
+    }
+
+    if (response.status === -5) {
+      return { ok: true, code: ResponseStatusCodes.canceled, className: null, title: null };
     }
 
     if ([301, 302].includes(response.status)) {

@@ -88,6 +88,7 @@ whenDefined().then(async () => {
     } catch (error) {
       goBackLink.hidden = false;
       goBackLink.href = window.location.pathname;
+      console.log('error', error);
     }
   }
 
