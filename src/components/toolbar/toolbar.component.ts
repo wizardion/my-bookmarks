@@ -76,6 +76,7 @@ export class BookmarkToolbarElement extends BaseElement {
     this.requests = [];
     await this.startProgress();
 
+    BookmarkManagerService.abort();
     allItems.forEach(s => BookmarkManagerService.bookmarks.get(s.id).status = null);
 
     for (let i = 1; i <= this.form.pagination.pageCount && processed < allItems.length && !this.canceled; i++) {
@@ -94,10 +95,6 @@ export class BookmarkToolbarElement extends BaseElement {
 
     await Promise.all(this.requests.filter(i => !i.resolved).map(i => i.promise));
     this.form.restCount.innerText = ``;
-
-    if (!this.canceled) {
-      await delay(1000);
-    }
 
     BookmarkRenderService.start = (currentPage - 1) * BookmarkRenderService.count;
     await BookmarkRenderService.render();
@@ -157,12 +154,13 @@ export class BookmarkToolbarElement extends BaseElement {
     const item = BookmarkManagerService.bookmarks.get(id);
     const bookmark = document.getElementById(id.toString()) as IBookmarkElement;
     const selected = !status.ok && status.className !== 'forbidden';
+    const requests = this.requests.filter(i => !i.resolved).length;
 
     bookmark?.setSelection(selected);
     BookmarkManagerService.setSelection(item.id, selected);
 
     item.status = status;
-    this.form.restCount.innerText = `pending: ${this.requests.filter(i => !i.resolved).length}`;
+    this.form.restCount.innerText = requests ? `pending: ${requests}` : '';
   }
 
   private scrollToElement(element?: HTMLElement) {
@@ -182,7 +180,7 @@ export class BookmarkToolbarElement extends BaseElement {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    this.timeout = setTimeout(() => this.timeout = null, 350);
+    this.timeout = setTimeout(() => this.timeout = null, 750);
   }
 
   private progress(processed: number, total: number) {
@@ -238,7 +236,7 @@ export class BookmarkToolbarElement extends BaseElement {
     this.form.cancel.disabled = true;
     this.form.progressBar.hidden = true;
 
-    // this.requests?.forEach(request => request.abort());
+    BookmarkManagerService.abort();
   }
 
   private onSelectionChange() {

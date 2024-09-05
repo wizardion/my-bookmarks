@@ -46,7 +46,7 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
   }
 
   setStatus(value?: IBookmarkStatus): void {
-    if (value) {
+    if (value?.className) {
       this.status.classList.toggle(value.className);
       this.status.setAttribute('title', value.title);
       this.status.disabled = false;
