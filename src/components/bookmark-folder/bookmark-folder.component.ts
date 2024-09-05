@@ -37,11 +37,8 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
     this.content.style.marginLeft = `${px}px`;
   }
 
-  select(value: boolean = true) {
-    if (!this.checkbox.disabled) {
-      this.checkbox.checked = value;
-      this.onSelectionChange();
-    }
+  setSelection(value: boolean = true) {
+    this.checkbox.checked = value;
   }
 
   setFocus(value: 'checkbox' | 'status'): void {
@@ -105,34 +102,26 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
     const checked = this.checkbox.checked;
     const tree = await chrome.bookmarks.getSubTree(this.id);
 
-    if (this.checkbox.checked) {
-      BookmarkManagerService.select(Number(this.id));
-    } else {
-      BookmarkManagerService.unselect(Number(this.id));
-    }
+    BookmarkManagerService.setSelection(Number(this.id), this.checkbox.checked);
 
     if (BookmarkRenderService.recursive) {
-      this.setSelection(tree, checked);
+      this.selectionSubItems(tree, checked);
     }
   }
 
-  private setSelection(items: chrome.bookmarks.BookmarkTreeNode[], checked: boolean, level = 0) {
+  private selectionSubItems(items: chrome.bookmarks.BookmarkTreeNode[], checked: boolean, level = 0) {
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const element = document.getElementById(item.id) as IBookmarkElement;
 
-      if (checked) {
-        BookmarkManagerService.select(Number(item.id));
-      } else {
-        BookmarkManagerService.unselect(Number(item.id));
-      }
+      BookmarkManagerService.setSelection(Number(item.id), checked);
 
       if (element) {
         element.selected = checked;
       }
 
       if (item.children) {
-        this.setSelection(item.children, checked, level + 1);
+        this.selectionSubItems(item.children, checked, level + 1);
       }
     }
   }

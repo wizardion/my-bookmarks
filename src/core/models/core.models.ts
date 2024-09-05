@@ -38,6 +38,7 @@ export enum ResponseStatusCodes {
   forbidden = 5,
   error = 6,
   lost = 7,
+  canceled = 8,
 }
 
 export interface IBookmarkStatus {
