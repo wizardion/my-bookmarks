@@ -5,6 +5,7 @@ import { BaseElement } from '../base/base.component';
 import { BookmarkManagerService } from 'services/bookmark-manager.service';
 import { BookmarkTypes, IBookmarkStatus } from 'core';
 import { BookmarkRenderService } from 'services/bookmarks-render.service';
+import { IBookmarkLevel } from 'core/models/core.models';
 
 
 const template: DocumentFragment = BaseElement.template({
@@ -17,6 +18,7 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
   readonly type = BookmarkTypes.FOLDER;
 
   private content: HTMLElement;
+  private folders: HTMLElement;
   private link: HTMLLinkElement;
   private checkbox: HTMLInputElement;
   private status: IBookmarkStatus;
@@ -27,6 +29,7 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
     this.link = this.template.querySelector('[name="link"]');
     this.content = this.template.querySelector('[name="content"]');
     this.checkbox = this.template.querySelector('[name="select"]');
+    this.folders = this.template.querySelector('[name="path"]') as HTMLElement;
   }
 
   protected eventListeners(): void {
@@ -57,6 +60,19 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
 
   setStatus(status: IBookmarkStatus) {
     this.status = status;
+  }
+
+  showPath(value: IBookmarkLevel[]) {
+    for(let level of value) {
+      const element = document.createElement('a');
+
+      element.href = `?id=${level.id}`;
+      element.innerText = level.title;
+
+      this.folders.appendChild(element);
+    }
+
+    this.folders.hidden = value.length === 0;
   }
 
   async checkBookmark(): Promise<IBookmarkStatus> {

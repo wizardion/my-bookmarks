@@ -8,6 +8,7 @@ import { IBookmarkElement } from 'components/models/bookmark.models';
 export class BookmarkRenderService {
   static levelId: string;
   static recursive: boolean;
+  static unsuccesfull: boolean;
   static content: HTMLDivElement;
   static items = new Map<number, IBookmarkNode>();
 
@@ -16,7 +17,9 @@ export class BookmarkRenderService {
   static total: number = 0;
 
   public static async render(rebind?: boolean) {
-    const data = await BookmarkManagerService.loadData(this.levelId, this.start, this.count, this.recursive, rebind);
+    let data = await BookmarkManagerService.loadData(
+      this.levelId, this.start, this.count, this.recursive, rebind, this.unsuccesfull
+    );
 
     this.total = BookmarkManagerService.bookmarks.size;
     this.items.clear();
@@ -29,7 +32,10 @@ export class BookmarkRenderService {
         const line = document.createElement('div');
         const bookmark = node.url ? this.renderBookmark(node) : this.renderFolder(node);
 
-        bookmark.shift(node.level * 20);
+        if (!this.unsuccesfull) {
+          bookmark.shift(node.level * 20);
+        }
+
         line.classList.add('bookmark-line');
         line.appendChild(bookmark);
 
@@ -75,6 +81,7 @@ export class BookmarkRenderService {
     item.selected = node.selected;
     item.open = this.recursive;
     item.setStatus(node.status);
+    item.showPath(node.path);
 
     return item;
   }
@@ -86,7 +93,14 @@ export class BookmarkRenderService {
     item.url = node.url;
     item.title = node.title;
     item.selected = node.selected;
+
     item.setStatus(node.status);
+    item.showPath(node.path);
+
+    // if (this.recursive) {
+      
+    //   // console.log(node.path);
+    // }
 
     return item;
   }

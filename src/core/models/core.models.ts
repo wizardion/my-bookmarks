@@ -6,7 +6,8 @@ export type IResponseType =
   | 'timeout'
   | 'forbidden'
   | 'redirected'
-  | 'unsuccessful';
+  | 'unsuccessful'
+  | null;
 
 export interface IBookmarkResponse {
   ok: boolean;
@@ -39,6 +40,7 @@ export enum ResponseStatusCodes {
   error = 6,
   lost = 7,
   canceled = 8,
+  down = 9,
 }
 
 export interface IBookmarkStatus {
@@ -48,12 +50,18 @@ export interface IBookmarkStatus {
   title?: string | null;
 }
 
+export interface IBookmarkLevel {
+  id: string;
+  title: string
+}
+
 export interface IBookmarkNode {
   id: number;
   title: string | null;
   url: string | null;
   level: number;
+  path: IBookmarkLevel[],
   type: BookmarkTypes;
   selected?: boolean;
-  status?: IBookmarkStatus
+  status?: IBookmarkStatus;
 }

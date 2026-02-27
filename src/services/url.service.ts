@@ -11,6 +11,7 @@ export class UrlService {
 
     return {
       timeout: settings.timeout,
+      unsuccesfull: urlParams.get('unsuccesfull') === 'true',
       size: Number(urlParams.get('size')) || settings.size,
       page: Number(urlParams.get('page') || '1') || defaultSettings.page,
       recursive: urlParams.get('recursive') === 'true' || settings.recursive,

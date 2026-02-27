@@ -29,12 +29,19 @@ function debounceScroll(element: HTMLElement) {
 async function onUrlChange() {
   const toolbar = document.getElementById('stick') as HTMLDivElement;
   const pagination = document.getElementById('nav-pagination') as PaginationElement;
-  const { page, size, recursive } = await UrlService.get();
+  const { page, size, recursive, unsuccesfull } = await UrlService.get();
   const redraw = recursive !== BookmarkRenderService.recursive;
+
+  if (unsuccesfull && !BookmarkRenderService.total) {
+    return UrlService.set({ unsuccesfull: false, page: null });
+  }
 
   BookmarkRenderService.count = size;
   BookmarkRenderService.start = (page - 1) * size;
   BookmarkRenderService.recursive = recursive;
+  // BookmarkRenderService.unsuccesfull = unsuccesfull;
+
+  // alert("size: " + size + ", total: " + BookmarkRenderService.total + ", unsuccesfull: " + unsuccesfull)
 
   await BookmarkRenderService.render(redraw);
   pagination.setPage(page, BookmarkRenderService.total, size);
@@ -58,12 +65,15 @@ async function onItemsRendered(toolbar: BookmarkToolbarElement, urlParams: IUrlP
   debounceScroll(toolbar.parentElement);
   window.addEventListener('popstate', () => onUrlChange());
   window.addEventListener('pushstate', () => onUrlChange());
+
+  if (urlParams.unsuccesfull) {
+    return UrlService.set({ unsuccesfull: null, page: null });
+  }
 }
 
 whenDefined().then(async () => {
   const pagination = document.getElementById('nav-pagination') as PaginationElement;
   const toolbar = document.getElementById('toolbar') as BookmarkToolbarElement;
-  const currentFolder = document.getElementById('parent-folder') as HTMLDivElement;
   const goBackLink = document.getElementById('go-back') as HTMLLinkElement;
   const urlParams = await UrlService.get();
 
@@ -73,6 +83,7 @@ whenDefined().then(async () => {
   BookmarkRenderService.recursive = urlParams.levelId !== '0' && urlParams.recursive;
   BookmarkRenderService.content = document.getElementById('bookmarks') as HTMLDivElement;
   BookmarkRenderService.content.parentElement.hidden = false;
+  
   toolbar.parentElement.hidden = false;
   pagination.pageSize = urlParams.size;
 
@@ -83,7 +94,6 @@ whenDefined().then(async () => {
       if (current && current.parentId) {
         goBackLink.hidden = false;
         goBackLink.href = current.parentId !== '0' ? `?id=${current.parentId}` : window.location.pathname;
-        currentFolder.innerText = current.title;
       }
     } catch (error) {
       goBackLink.hidden = false;

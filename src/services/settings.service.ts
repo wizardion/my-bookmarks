@@ -3,6 +3,7 @@ import { ISettings } from './models/settings.models';
 
 export const defaultSettings: ISettings = {
   recursive: false,
+  unsuccesfull: false,
   timeout: 30,
   size: 100,
   page: 1,
@@ -23,6 +24,7 @@ export class SettingsService {
 
     return {
       recursive: settings.recursive,
+      unsuccesfull: settings.unsuccesfull,
       timeout: settings.timeout,
       size: settings.size,
       page: settings.page,

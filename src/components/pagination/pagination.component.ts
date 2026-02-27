@@ -93,6 +93,10 @@ export class PaginationElement extends BaseElement {
     this.form.pageSize.value = value.toString();
   }
 
+  get pageSize(): number {
+    return this._pageSize;
+  }
+
   set disabled(value: boolean) {
     this.form.prev.disabled = value;
     this.form.next.disabled = value;

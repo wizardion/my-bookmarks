@@ -11,6 +11,7 @@
     "allowJs": true,
     "baseUrl": "src",
     "moduleSuffixes": [".component", ""],
+    "types": ["chrome", "node"],
     "paths": {
       "core/*": ["core/*"],
       "modules/*": ["modules/*"],

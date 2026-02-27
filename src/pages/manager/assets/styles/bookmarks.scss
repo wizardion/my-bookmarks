@@ -20,21 +20,44 @@ bookmark-folder {
 }
 
 .bookmark-item {
-  display: block;
+  display: flex;
   flex: 1 1 65px;
   white-space: nowrap;
   overflow: hidden;
+  gap: 10px;
+  align-items: center;
 }
 
-.bookmark-item a {
+.bookmark-item > a {
   max-width: calc(100% - 25px);
+  width: 100%;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
 }
 
+.bookmark-item .path {
+  padding-right: 5px;
+}
+
+.bookmark-item .path a {
+  color: var(--control-inactive-text-color);
+}
+
+.bookmark-item .path a:not(:first-child)::before {
+  // content: "\2022";
+  content: "\203A";
+  margin: 0 5px;    /* Space around the separator */
+  color: var(--base-inactive-color);
+  text-decoration: none;
+  display: inline-block;
+  pointer-events: none;
+  cursor: default;
+}
+
 .bookmark-item svg {
   fill: var(--icon-background-color);
+  flex-shrink: 0;
 }
 
 .bookmark-controls .status svg .unsuccessful,
@@ -96,7 +119,7 @@ bookmark-folder {
   background-color: var(--control-activated-background-color);
 }
 
-.bookmark-controls:has(input[type=checkbox]:checked) + .bookmark-item a {
+.bookmark-controls:has(input[type=checkbox]:checked) + .bookmark-item > a {
   color: var(--base-highlight-color);
   text-decoration: underline;
 }
