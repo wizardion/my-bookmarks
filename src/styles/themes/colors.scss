@@ -1,3 +1,5 @@
+@use "sass:color";
+
 $themes: (
   light: ('body-color': #f1f3f4,
     'base-text-color': black,
@@ -16,20 +18,20 @@ $themes: (
     'control-text-color': #045c55,
 
     'control-bright-color': #06736a,
-    'progress-thumb-color': lighten(#06736a, 7%),
+    'progress-thumb-color': color.adjust(#06736a, $lightness: 7%),
     'control-transparent-color': white,
 
     'control-inactive-background-color': #f7f7f7,
     'control-inactive-border-color': #06736a22,
     'control-inactive-text-color': #a4a7a7,
 
-    'control-hover-background-color': lighten(#06736a22, 0%),
-    'control-hover-border-color': lighten(#06736a94, 0%),
-    'control-hover-text-color': lighten(#045c55, 10%),
+    'control-hover-background-color': color.adjust(#06736a22, $lightness: 0%),
+    'control-hover-border-color': color.adjust(#06736a94, $lightness: 0%),
+    'control-hover-text-color': color.adjust(#045c55, $lightness: 10%),
 
     'control-activated-background-color': #06736a08,
     'control-activated-border-color': #06736a44,
-    'control-activated-text-color': darken(#045c55B5, 2%),
+    'control-activated-text-color': color.adjust(#045c55, $lightness: -2%),
 
     'control-dangerous-background-color': #de21212a,
     'control-dangerous-border-color': #e3363655,
@@ -49,11 +51,11 @@ $themes: (
     'base-text-color': #c7c7c7,
     'base-bright-color': #e3e3e3,
 
-    'base-highlight-color': scale-color(#aecbfa, $saturation: -30%),
+    'base-highlight-color': color.scale(#aecbfa, $saturation: -30%),
     'base-inactive-color': #595f67,
 
     'tile-background-color': #34363a,
-    'tile-border-color': lighten(#34363a, 10%),
+    'tile-border-color': color.adjust(#34363a, $lightness: 10%),
     'tile-shadow-color': rgba(0, 0, 0, 0.3),
 
     'control-input-background-color': #404347,
@@ -61,21 +63,21 @@ $themes: (
     'control-border-color': #4f5862,
     'control-text-color': #c7c7c7,
 
-    'control-bright-color': lighten(#aecbfa, 1%),
-    'progress-thumb-color': lighten(#aecbfa, 1%),
+    'control-bright-color': color.adjust(#aecbfa, $lightness: 10%),
+    'progress-thumb-color': color.adjust(#aecbfa, $lightness: 10%),
     'control-transparent-color': #34363a,
 
-    'control-inactive-background-color': darken(#404347, 3%),
-    'control-inactive-border-color': darken(#4f5862, 10%),
+    'control-inactive-background-color': color.adjust(#404347, $lightness: -3%),
+    'control-inactive-border-color': color.adjust(#4f5862, $lightness: -10%),
     'control-inactive-text-color': #60676f,
 
-    'control-hover-background-color': lighten(#404347, 2%),
-    'control-hover-border-color': lighten(#4f5862, 5%),
-    'control-hover-text-color': lighten(#c7c7c7, 15%),
+    'control-hover-background-color': color.adjust(#404347, $lightness: 2%),
+    'control-hover-border-color': color.adjust(#4f5862, $lightness: 5%),
+    'control-hover-text-color': color.adjust(#c7c7c7, $lightness: 15%),
 
-    'control-activated-background-color': darken(#404347, 2%),
-    'control-activated-border-color': darken(#4f5862, 5%),
-    'control-activated-text-color': darken(#c7c7c7, 15%),
+    'control-activated-background-color': color.adjust(#404347, $lightness: -2%),
+    'control-activated-border-color': color.adjust(#4f5862, $lightness: -5%),
+    'control-activated-text-color': color.adjust(#c7c7c7, $lightness: -15%),
 
     'control-dangerous-background-color': #e336362a,
     'control-dangerous-border-color': #e3363655,
@@ -84,14 +86,14 @@ $themes: (
     'control-activated-dangerous-border-color': #e3363665,
 
     'unsuccessful-color': #ED6A5E,
-    'dangerous-color': lighten(#a32626, 20%),
+    'dangerous-color': color.adjust(#a32626, $lightness: 20%),
     'success-color': #07a599,
 
-    'validator-error-background-color': lighten(#9d232325, 35%),
-    'warning-color': lighten(chocolate, 10%),
+    'validator-error-background-color': color.adjust(#9d232325, $lightness: 35%),
+    'warning-color': color.adjust(chocolate, $lightness: 10%),
     'footer-link-svg-color': #c7c7c7,
 
-    'icon-background-color': lighten(#aecbfa, 10%),
+    'icon-background-color': color.adjust(#aecbfa, $lightness: 10%),
     'backdrop-background-color': rgba(0, 0, 0, 0.3),
   )
 );

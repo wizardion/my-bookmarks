@@ -12,7 +12,7 @@ export interface ISettings {
 }
 
 export interface IUrlParams extends ISettings {
-  levelId: string;
+  levelId: number;
 
   has(key: string): boolean;
 }

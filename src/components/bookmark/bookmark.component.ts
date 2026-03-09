@@ -1,8 +1,9 @@
 import { IBookmarkElement } from 'components/models/bookmark.models';
 import { BaseElement } from '../base/base.component';
-import { BookmarkTypes, IBookmarkStatus, ResponseStatuses } from 'core';
-import { BookmarkManagerService } from 'services/bookmark-manager.service';
-import { IBookmarkLevel } from 'core/models/core.models';
+import { BookmarkTypes } from 'services/indexed-db/models/db.enums';
+import { IBookmarkLevel, IStatusDetails } from 'services/indexed-db/models/db.models';
+import { UrlChecker } from 'services/url/url-checker.service';
+import { IURLResponseStatus } from 'services/url/models/url.models';
 
 
 const template: DocumentFragment = BaseElement.template({
@@ -41,14 +42,14 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
   }
 
   reset() {
-    this.status.classList.remove(...Object.keys(ResponseStatuses));
+    // this.status.classList.remove(...Object.keys(StatusMessages));
   }
 
   setSelection(value: boolean = true) {
     this.checkbox.checked = value;
   }
 
-  setStatus(value?: IBookmarkStatus): void {
+  setStatus(value?: IStatusDetails): void {
     if (value?.className) {
       this.status.classList.toggle(value.className);
       this.status.setAttribute('title', value.title);
@@ -65,7 +66,7 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
   }
 
   showPath(value: IBookmarkLevel[]) {
-    for(let level of value) {
+    for (const level of value) {
       const element = document.createElement('a');
 
       element.href = `?id=${level.id}`;
@@ -77,14 +78,14 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
     this.folders.hidden = value.length === 0;
   }
 
-  async checkBookmark(): Promise<IBookmarkStatus | null> {
+  async checkBookmark(): Promise<IURLResponseStatus | null> {
     if (!this.status.disabled) {
       this.status.disabled = true;
       this.startAnimations();
 
-      const response = await BookmarkManagerService.checkUrl(this._url);
+      const response = await UrlChecker.checkUrl(this._url);
 
-      this.setStatus(response);
+      this.setStatus({ className: response.className, title: response.title });
       this.stopAnimations();
       this.status.disabled = false;
 
@@ -125,7 +126,7 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
   }
 
   private onSelectionChange() {
-    BookmarkManagerService.setSelection(Number(this.id), this.checkbox.checked);
+    // BookmarksAPIManager.setSelection(Number(this.id), this.checkbox.checked);
   }
 
   private startAnimations() {

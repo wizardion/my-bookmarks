@@ -2,10 +2,11 @@ import './assets/styles/bookmark-folder.scss';
 
 import { IBookmarkElement } from 'components/models/bookmark.models';
 import { BaseElement } from '../base/base.component';
-import { BookmarkManagerService } from 'services/bookmark-manager.service';
-import { BookmarkTypes, IBookmarkStatus } from 'core';
-import { BookmarkRenderService } from 'services/bookmarks-render.service';
-import { IBookmarkLevel } from 'core/models/core.models';
+import { BookmarkRenderService } from 'services/renders/bookmarks-render.service';
+import { IBookmarkTreeNode } from 'services/bookmarks-api/models/bookmarks-api.models';
+import { BookmarkTypes, StatusCodes } from 'services/indexed-db/models/db.enums';
+import { IBookmarkLevel, IStatusDetails } from 'services/indexed-db/models/db.models';
+import { IURLResponseStatus } from 'services/url/models/url.models';
 
 
 const template: DocumentFragment = BaseElement.template({
@@ -21,7 +22,7 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
   private folders: HTMLElement;
   private link: HTMLLinkElement;
   private checkbox: HTMLInputElement;
-  private status: IBookmarkStatus;
+  private status: IStatusDetails;
 
   constructor() {
     super();
@@ -58,12 +59,12 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
     throw new Error('Method not implemented.');
   }
 
-  setStatus(status: IBookmarkStatus) {
+  setStatus(status: IStatusDetails) {
     this.status = status;
   }
 
   showPath(value: IBookmarkLevel[]) {
-    for(let level of value) {
+    for (const level of value) {
       const element = document.createElement('a');
 
       element.href = `?id=${level.id}`;
@@ -75,8 +76,13 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
     this.folders.hidden = value.length === 0;
   }
 
-  async checkBookmark(): Promise<IBookmarkStatus> {
-    return Promise.resolve(this.status);
+  async checkBookmark(): Promise<IURLResponseStatus> {
+    return Promise.resolve({
+      ok: true,
+      code: StatusCodes.ok,
+      className: 'success',
+      title: ''
+    });
   }
 
   set disabled(value: boolean) {
@@ -118,19 +124,19 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
     const checked = this.checkbox.checked;
     const tree = await chrome.bookmarks.getSubTree(this.id);
 
-    BookmarkManagerService.setSelection(Number(this.id), this.checkbox.checked);
+    // BookmarksAPIManager.setSelection(Number(this.id), this.checkbox.checked);
 
-    if (BookmarkRenderService.recursive) {
+    if (BookmarkRenderService.filters.recursive) {
       this.selectionSubItems(tree, checked);
     }
   }
 
-  private selectionSubItems(items: chrome.bookmarks.BookmarkTreeNode[], checked: boolean, level = 0) {
+  private selectionSubItems(items: IBookmarkTreeNode[], checked: boolean, level = 0) {
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
       const element = document.getElementById(item.id) as IBookmarkElement;
 
-      BookmarkManagerService.setSelection(Number(item.id), checked);
+      // BookmarksAPIManager.setSelection(Number(item.id), checked);
 
       if (element) {
         element.selected = checked;

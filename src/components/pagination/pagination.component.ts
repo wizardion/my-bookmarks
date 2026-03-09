@@ -2,9 +2,9 @@ import './assets/styles/pagination.component.scss';
 
 import { BaseElement } from 'components/base/base.component';
 import { IPaginationForm } from './models/pagination.models';
-import { IEventListener } from 'core/index';
-import { UrlService } from 'services/url.service';
-import { SettingsService } from 'services/settings.service';
+import { UrlService } from 'services/url/url.service';
+import { SettingsService } from 'services/settings/settings.service';
+import { IEventListener } from 'core/models/core.models';
 
 
 const template: DocumentFragment = BaseElement.template({
@@ -23,7 +23,7 @@ export class PaginationElement extends BaseElement {
   private _pagesCount: number;
   private _disabled: boolean;
 
-  constructor () {
+  constructor() {
     super();
     this.template = <HTMLElement>template.cloneNode(true);
 
@@ -36,8 +36,10 @@ export class PaginationElement extends BaseElement {
   }
 
   protected eventListeners(): void {
-    this.form.next.addEventListener('mousedown', () => this.onPageChange(this._currentPage + 1));
-    this.form.prev.addEventListener('mousedown', () => this.onPageChange(this._currentPage - 1));
+    this.form.next
+      .addEventListener('mousedown', () => this.onPageChange(this._currentPage + 1));
+    this.form.prev
+      .addEventListener('mousedown', () => this.onPageChange(this._currentPage - 1));
     this.form.pageSize.addEventListener('change', () => this.onPageSizeChange());
   }
 

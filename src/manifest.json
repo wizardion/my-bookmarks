@@ -1,6 +1,6 @@
 {
 	"update_url": "https://clients2.google.com/service/update2/crx",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"name": "My-Bookmarks",
 	"description": "My-Bookmarks",
 	"manifest_version": 3,
@@ -9,7 +9,9 @@
 	},
 	"permissions": [
 		"bookmarks",
-		"storage"
+		"storage",
+		"alarms",
+		"nativeMessaging"
 	],
 	"host_permissions": [
 		"https://*/",

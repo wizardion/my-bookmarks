@@ -1,21 +1,17 @@
 import './assets/styles/toolbar.component.scss';
 
 import { BaseElement } from '../base/base.component';
-import { BookmarkRenderService } from 'services/bookmarks-render.service';
-import { IToolbarForm } from './models/toolbar.models';
-import { BookmarkManagerService } from 'services/bookmark-manager.service';
-import { SettingsService } from 'services/settings.service';
+import { BookmarkRenderService } from 'services/renders/bookmarks-render.service';
+import { IRequestQueue, IToolbarForm } from './models/toolbar.models';
+import { SettingsService } from 'services/settings/settings.service';
 import { IBookmarkElement } from 'components/models/bookmark.models';
-import { UrlService } from 'services/url.service';
-import { IBookmarkNode, IBookmarkStatus, ResponseStatusCodes } from 'core/models/core.models';
-import { delay, BookmarkTypes } from 'core';
+import { UrlService } from 'services/url/url.service';
+import { delay } from 'core';
 import { DialogElement } from 'components/dialog/dialog.component';
-import { ToolbarKeyboardService } from 'services/toolbar-keyboards.service';
+import { IBookmarkNode } from 'services/indexed-db/models/db.models';
+import { StatusCodes } from 'services/indexed-db/models/db.enums';
+import { UrlChecker } from 'services/url/url-checker.service';
 
-
-type IRequestQueue = {
-  id: number, resolved: boolean, url: string, promise: Promise<IBookmarkStatus> | null, retries: number
-};
 const template: DocumentFragment = BaseElement.template({
   templateUrl: './toolbar.component.html'
 });
@@ -66,39 +62,44 @@ export class BookmarkToolbarElement extends BaseElement {
     this.form.timeout.addEventListener('input', () => this.onTimeoutChange());
     this.form.cancel.addEventListener('click', () => this.cancelRequests());
     this.form.remove.addEventListener('click', () => this.onRemove());
-    this.form.unsuccesfull.addEventListener('change', () => this.onUnsuccesfullChange());
+    this.form.unsuccesfull
+      .addEventListener('change', () => this.onUnsuccesfullChange());
 
-    BookmarkManagerService.timeout = settings.timeout;
-    BookmarkManagerService.addEventListener('select', () => this.onSelectionChange());
+    UrlChecker.setTimeout(settings.timeout);
+    // BookmarksAPIManager.addEventListener('select', () => this.onSelectionChange());
     window.addEventListener('rendered', () => this.onItemsRendered());
-    ToolbarKeyboardService.watch(this);
+    // ToolbarKeyboardService.watch(this);
 
     this.form.pagination.disabled = false;
   }
 
   protected async checkAllBookmarks() {
-    const currentPage = this.form.pagination.page;
-    const hasSelection = BookmarkManagerService.selection.size > 0;
-    const allItems = (
-      hasSelection ? BookmarkManagerService.getSelectedItems() : BookmarkManagerService.getItems()
-    ).filter(i => i.type === BookmarkTypes.LINK);
-    this.totalBookmarks = allItems.length;
+    // const hasSelection = BookmarksAPIManager.selection.size > 0;
+    // const allItems = (
+    //   hasSelection ? BookmarksAPIManager.getSelectedItems() : BookmarksAPIManager.getItems()
+    // ).filter(i => i.type === BookmarkTypes.LINK);
 
-    await this.startProgress();
+    // this.totalBookmarks = allItems.length;
 
-    BookmarkManagerService.abort();
-    allItems.forEach(s => BookmarkManagerService.bookmarks.get(s.id).status = null);
-    await BookmarkRenderService.render();
+    // await this.startProgress();
 
-    await this.requestWakeLock();
-    await this.checkItems(allItems);
+    // BookmarksAPIManager.abort();
+    // allItems.forEach(s => BookmarksAPIManager.bookmarks.get(s.id).status = null);
+    // await BookmarkRenderService.render();
 
-    await this.finishProgress();
-    
-    if (Array.from(BookmarkManagerService.bookmarks.values()).filter(i => i.status?.ok === false).length > 0) {
-      this.form.unsuccesfull.checked = true;
-      this.onUnsuccesfullChange();
-    }
+    // await this.requestWakeLock();
+    // await this.checkItems(allItems);
+
+    // await this.finishProgress();
+
+    // const unsuccesfull = (
+    //   Array.from(BookmarksAPIManager.bookmarks.values()).filter(i => i.status?.ok === false)
+    // );
+
+    // if (unsuccesfull.length) {
+    //   this.form.unsuccesfull.checked = true;
+    //   this.onUnsuccesfullChange();
+    // }
   }
 
   protected async checkItems(items: IBookmarkNode[]) {
@@ -109,12 +110,20 @@ export class BookmarkToolbarElement extends BaseElement {
       const item = items[i];
       const domain = this.getDomainName(item.url);
       const queue = requests.get(domain) || [];
-      
-      queue.push({ id: item.id, resolved: false, url: item.url || 'chrome', promise: null, retries: 0 });
+
+      queue.push({
+        id: item.id,
+        resolved: false,
+        url: item.url || 'chrome',
+        promise: null,
+        retries: 0
+      });
       requests.set(domain, queue);
     }
 
-    for (const [domain, queue] of requests) {
+    for (const request of requests) {
+      const queue = request[1];
+
       lines.push(this.processQueue(queue));
 
       if (this.canceled) {
@@ -132,7 +141,6 @@ export class BookmarkToolbarElement extends BaseElement {
     this.form.expand.disabled = value;
     this.form.check.disabled = value;
     this.form.timeout.disabled = value;
-    // this.form.unsuccesfull.disabled = value;
 
     super.disabled = value;
   }
@@ -158,7 +166,7 @@ export class BookmarkToolbarElement extends BaseElement {
         }
       }
 
-      this.progress(this.totalRequests, this.totalBookmarks);
+      this.setProgress(this.totalRequests, this.totalBookmarks);
       this.markPendingCount();
 
       if (item?.retries > 0) {
@@ -168,10 +176,14 @@ export class BookmarkToolbarElement extends BaseElement {
       try {
         const element = document.getElementById(item.id.toString()) as IBookmarkElement;
         const result = await (
-          element? element.checkBookmark() : BookmarkManagerService.checkUrl(item.url)
+          element ? element.checkBookmark() : UrlChecker.checkUrl(item.url)
         );
 
-        if (!result.ok && result.code === ResponseStatusCodes.timeout && item?.retries < maxRetries) {
+        if (
+          !result.ok &&
+          result.code === StatusCodes.timeout &&
+          item?.retries < maxRetries
+        ) {
           console.log(`retries: ${item?.retries}, ${item.url};`);
           await delay(1000);
 
@@ -183,7 +195,7 @@ export class BookmarkToolbarElement extends BaseElement {
         }
 
         await this.requestWakeLock();
-        this.processResult(item.id, result);
+        // this.processResult(item.id, result);
       } catch (error) {
         console.error(`Error fetching ${item.id}:`, error);
       } finally {
@@ -195,37 +207,37 @@ export class BookmarkToolbarElement extends BaseElement {
     }
   }
 
-  private async processResult(id: number, status: IBookmarkStatus) {
-    const item = BookmarkManagerService.bookmarks.get(id);
+  // private async processResult(id: number, status: IBookmarkStatus) {
+  //   const item = BookmarksAPIManager.bookmarks.get(id);
 
-    if (item) {
-      const bookmark = document.getElementById(id.toString()) as IBookmarkElement;
-      const selected = !status.ok && [
-        ResponseStatusCodes.error,
-        ResponseStatusCodes.lost,
-        ResponseStatusCodes.down,
-        // ResponseStatusCodes.redirected,
-      ].includes(status.code);
+  //   if (item) {
+  //     const bookmark = document.getElementById(id.toString()) as IBookmarkElement;
+  //     const selected = !status.ok && [
+  //       StatusCodes.error,
+  //       StatusCodes.lost,
+  //       StatusCodes.down,
+  //     ].includes(status.code);
 
-      bookmark?.setSelection(selected);
-      BookmarkManagerService.setSelection(item.id, selected);
+  //     bookmark?.setSelection(selected);
+  //     // BookmarksAPIManager.setSelection(item.id, selected);
 
-      item.status = status;
-    }
-  }
+  //     item.status = status;
+  //   }
+  // }
 
   private getDomainName(path: string | null): string {
     try {
       const url = new URL(path || 'local');
+
       return url.hostname.replace(/^www\./, '');
     } catch (error) {
-      // Handle cases where the input string is not a valid URL
-      console.error("Invalid URL:", error);
+      console.error('Invalid URL:', error);
+
       return 'null';
     }
   }
 
-  private progress(processed: number, total: number) {
+  private setProgress(processed: number, total: number) {
     const progress = Math.floor(((100 * processed) / total));
 
     this.form.progressBar.style.width = progress + '%';
@@ -252,39 +264,39 @@ export class BookmarkToolbarElement extends BaseElement {
       BookmarkRenderService.disableItems();
     }
 
-    BookmarkManagerService.timeout = settings.timeout;
+    UrlChecker.setTimeout(settings.timeout);
 
     await delay();
   }
 
   private async finishProgress(wait = true) {
-    const animations = this.form.progressBar.getAnimations();
-    const selectedItems = BookmarkManagerService.selection.size;
-    const unsuccesfullItems = Array.from(BookmarkManagerService.bookmarks.values())
-      .filter(i => i.status?.ok === false).length;
+    // const animations = this.form.progressBar.getAnimations();
+    // const selectedItems = BookmarksAPIManager.selection.size;
+    // const unsuccesfullItems = Array.from(BookmarksAPIManager.bookmarks.values())
+    //   .filter(i => i.status?.ok === false).length;
 
-    if (wait && animations?.length > 0) {
-      await animations[0].finished;
-    }
+    // if (wait && animations?.length > 0) {
+    //   await animations[0].finished;
+    // }
 
-    this.disabled = false;
-    this.processing = false;
-    this.form.check.parentElement.hidden = false;
-    this.form.cancel.parentElement.hidden = true;
-    this.form.cancel.disabled = false;
-    this.form.progressBar.hidden = true;
-    this.form.progressBar.style.width = '0%';
-    this.form.remove.disabled = selectedItems === 0;
-    this.form.unsuccesfull.disabled = unsuccesfullItems === 0;
-    this.form.restCount.hidden = true;
-    this.form.restCount.innerText = '';
-    this.form.checkCount.hidden = true;
-    this.form.checkCount.innerText = '';
-    this.totalRequests = 0;
-    this.requests = 0;
+    // this.disabled = false;
+    // this.processing = false;
+    // this.form.check.parentElement.hidden = false;
+    // this.form.cancel.parentElement.hidden = true;
+    // this.form.cancel.disabled = false;
+    // this.form.progressBar.hidden = true;
+    // this.form.progressBar.style.width = '0%';
+    // this.form.remove.disabled = selectedItems === 0;
+    // this.form.unsuccesfull.disabled = unsuccesfullItems === 0;
+    // this.form.restCount.hidden = true;
+    // this.form.restCount.innerText = '';
+    // this.form.checkCount.hidden = true;
+    // this.form.checkCount.innerText = '';
+    // this.totalRequests = 0;
+    // this.requests = 0;
 
-    await this.wakeLock?.release();
-    // setTimeout(() => console.clear(), 3000);
+    // await this.wakeLock?.release();
+    // // setTimeout(() => console.clear(), 3000);
   }
 
   private cancelRequests() {
@@ -292,22 +304,29 @@ export class BookmarkToolbarElement extends BaseElement {
     this.form.cancel.disabled = true;
     this.form.progressBar.hidden = true;
 
-    BookmarkManagerService.abort();
+    UrlChecker.abort();
   }
 
   private onSelectionChange() {
-    const size = BookmarkManagerService.selection.size;
+    // const size = BookmarksAPIManager.selection.size;
 
-    this.form.remove.disabled = this.processing || size === 0;
-    this.form.removeCount.hidden = size === 0;
-    this.form.removeCount.innerText = size.toString();
-    (this.form.check.nextElementSibling as HTMLElement).innerText = size === 0 ? 'Check all' : ' Check selected';
+    // this.form.remove.disabled = this.processing || size === 0;
+    // this.form.removeCount.hidden = size === 0;
+    // this.form.removeCount.innerText = size.toString();
+    // (this.form.check.nextElementSibling as HTMLElement).innerText = size === 0
+    //   ? 'Check all'
+    //   : ' Check selected';
   }
 
   private markPendingCount() {
     const digits = Math.floor(Math.log10(this.totalBookmarks)) + 1;
-    this.form.checkCount.innerText = `${String(this.totalRequests).padStart(digits, '0')} / ${this.totalBookmarks}`;
-    this.form.restCount.innerText = `pending: ${String(this.requests).padStart(2, '0')}`;
+
+    this.form.checkCount.innerText = (
+      `${String(this.totalRequests).padStart(digits, '0')} / ${this.totalBookmarks}`
+    );
+    this.form.restCount.innerText = (
+      `pending: ${String(this.requests).padStart(2, '0')}`
+    );
   }
 
   private async onRecursiveChange() {
@@ -315,7 +334,7 @@ export class BookmarkToolbarElement extends BaseElement {
 
     settings.recursive = this.form.expand.checked;
 
-    SettingsService.set(settings);
+    // SettingsService.set(settings);
     UrlService.set({ recursive: settings.recursive, page: null });
   }
 
@@ -324,9 +343,8 @@ export class BookmarkToolbarElement extends BaseElement {
     // settings.unsuccesfull = this.form.unsuccesfull.checked;
     // SettingsService.set(settings);
     // UrlService.set({ unsuccesfull: settings.unsuccesfull, page: null });
-    const unsuccesfull = this.form.unsuccesfull.checked;
 
-    BookmarkRenderService.unsuccesfull = unsuccesfull;
+    BookmarkRenderService.filters.unsuccessfulOnly = this.form.unsuccesfull.checked;
     UrlService.set({ page: null });
   }
 
@@ -336,17 +354,18 @@ export class BookmarkToolbarElement extends BaseElement {
     const timeout = Math.max(value, 1);
 
     settings.timeout = timeout;
-    BookmarkManagerService.timeout = settings.timeout;
+    UrlChecker.setTimeout(settings.timeout);
 
     this.form.timeoutText.innerText = timeout + ' s';
     SettingsService.set(settings);
   }
 
   private async onItemsRendered() {
-    if (!this.processing) {
-      this.form.check.disabled = !Array
-        .from(BookmarkRenderService.items.values()).some(i => i.type === BookmarkTypes.LINK);
-    }
+    // if (!this.processing) {
+    //   this.form.check.disabled = !Array
+    //     .from(BookmarkRenderService.items.values())
+    //     .some(i => i.type === BookmarkTypes.LINK);
+    // }
   }
 
   private async requestWakeLock() {
@@ -359,28 +378,29 @@ export class BookmarkToolbarElement extends BaseElement {
   }
 
   private async onRemove() {
-    this.form.pagination.disabled = true;
+    // this.form.pagination.disabled = true;
 
-    const dialog = document.getElementById('dialog') as DialogElement;
-    const message = 'Please confirm that your selection is correct.\nAttention! This action is irreversible!';
-    const ok = await dialog.open('Attention', message);
+    // const dialog = document.getElementById('dialog') as DialogElement;
+    // const message = 'Please confirm that your selection is correct.\n' +
+    //   'Attention! This action is irreversible!';
+    // const ok = await dialog.open('Attention', message);
 
-    if (ok) {
-      const { page } = await UrlService.get();
+    // if (ok) {
+    //   const { page } = await UrlService.get();
 
-      await this.startProgress(false);
-      await BookmarkManagerService.removeSelected((i, t) => this.progress(i, t));
+    //   await this.startProgress(false);
+    //   await BookmarksAPIManager.removeSelected((i, t) => this.setProgress(i, t));
 
-      if (page > 1 && await BookmarkRenderService.getSize() === 0) {
-        UrlService.set({ page: Math.min(page - 1, 0) });
-      } else {
-        await BookmarkRenderService.render();
-        this.form.pagination.setPage(page, await BookmarkRenderService.total);
-      }
+    //   if (page > 1 && await BookmarkRenderService.total === 0) {
+    //     UrlService.set({ page: Math.min(page - 1, 0) });
+    //   } else {
+    //     await BookmarkRenderService.render();
+    //     this.form.pagination.setPage(page, await BookmarkRenderService.total);
+    //   }
 
-      await this.finishProgress();
-    }
+    //   await this.finishProgress();
+    // }
 
-    this.form.pagination.disabled = false;
+    // this.form.pagination.disabled = false;
   }
 }

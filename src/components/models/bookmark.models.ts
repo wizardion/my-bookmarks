@@ -1,5 +1,6 @@
-import { BookmarkTypes, IBookmarkStatus } from 'core';
-
+import { BookmarkTypes } from 'services/indexed-db/models/db.enums';
+import { IStatusDetails } from 'services/indexed-db/models/db.models';
+import { IURLResponseStatus } from 'services/url/models/url.models';
 
 export interface IBookmarkElement extends HTMLElement {
   type: BookmarkTypes;
@@ -14,7 +15,7 @@ export interface IBookmarkElement extends HTMLElement {
   reset(): void;
   shift(px: number): void;
   setSelection(value?: boolean): void;
-  setStatus(value: IBookmarkStatus): void;
+  setStatus(value: IStatusDetails): void;
   setFocus(value: 'checkbox' | 'status'): void;
-  checkBookmark(): Promise<IBookmarkStatus>;
+  checkBookmark(): Promise<IURLResponseStatus>;
 }

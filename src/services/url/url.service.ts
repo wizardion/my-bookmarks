@@ -1,5 +1,8 @@
-import { ISettings, IUrlParams } from './models/settings.models';
-import { defaultSettings, SettingsService } from './settings.service';
+
+import { ISettings, IUrlParams } from 'services/settings/models/settings.models';
+import { SettingsService } from '../settings/settings.service';
+import { UrlParams } from './url-params';
+import { SETTINGS_DEFAULTS } from 'services/settings/utils/settings.constant';
 
 
 export class UrlService {
@@ -7,17 +10,8 @@ export class UrlService {
 
   static async get(): Promise<IUrlParams> {
     const settings = await SettingsService.get();
-    const urlParams = new URLSearchParams(window.location.search);
 
-    return {
-      timeout: settings.timeout,
-      unsuccesfull: urlParams.get('unsuccesfull') === 'true',
-      size: Number(urlParams.get('size')) || settings.size,
-      page: Number(urlParams.get('page') || '1') || defaultSettings.page,
-      recursive: urlParams.get('recursive') === 'true' || settings.recursive,
-      levelId: urlParams.get('id') || '0',
-      has: (key) => urlParams.has(key)
-    };
+    return new UrlParams(settings, window.location.search);
   }
 
   static async set(params: Partial<ISettings>): Promise<void> {
@@ -36,7 +30,7 @@ export class UrlService {
       const key = name as keyof ISettings;
       const param = params[key];
 
-      if (!param || params[key] === defaultSettings[key]) {
+      if (!param || params[key] === SETTINGS_DEFAULTS[key]) {
         urlParams.delete(key);
       } else {
         urlParams.set(key, param.toString());

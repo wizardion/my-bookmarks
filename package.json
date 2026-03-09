@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "Bookmark Manager",
   "private": true,
-  "dependencies": {},
+  "dependencies": {
+    "idb": "^8.0.3"
+  },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.2.0",
     "@typescript-eslint/parser": "^8.2.0",

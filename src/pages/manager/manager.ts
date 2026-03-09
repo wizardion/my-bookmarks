@@ -2,12 +2,12 @@ import 'styles/themes/auto.scss';
 import './assets/styles/body.scss';
 import './assets/styles/manager.scss';
 
-import { BookmarkRenderService } from 'services/bookmarks-render.service';
+import { BookmarkRenderService } from 'services/renders/bookmarks-render.service';
 import { BookmarkToolbarElement } from 'components/toolbar/toolbar.component';
 import { PaginationElement } from 'components/pagination/pagination.component';
-import { IUrlParams } from 'services/models/settings.models';
+import { IUrlParams } from 'services/settings/models/settings.models';
 import { Debounce } from 'services/debounce.service';
-import { UrlService } from 'services/url.service';
+import { UrlService } from 'services/url/url.service';
 import { whenDefined } from 'components';
 
 
@@ -30,20 +30,17 @@ async function onUrlChange() {
   const toolbar = document.getElementById('stick') as HTMLDivElement;
   const pagination = document.getElementById('nav-pagination') as PaginationElement;
   const { page, size, recursive, unsuccesfull } = await UrlService.get();
-  const redraw = recursive !== BookmarkRenderService.recursive;
 
   if (unsuccesfull && !BookmarkRenderService.total) {
     return UrlService.set({ unsuccesfull: false, page: null });
   }
 
-  BookmarkRenderService.count = size;
-  BookmarkRenderService.start = (page - 1) * size;
-  BookmarkRenderService.recursive = recursive;
+  BookmarkRenderService.filters.itemsPerPage = size;
+  BookmarkRenderService.filters.page = page;
+  BookmarkRenderService.filters.recursive = recursive;
   // BookmarkRenderService.unsuccesfull = unsuccesfull;
 
-  // alert("size: " + size + ", total: " + BookmarkRenderService.total + ", unsuccesfull: " + unsuccesfull)
-
-  await BookmarkRenderService.render(redraw);
+  await BookmarkRenderService.render();
   pagination.setPage(page, BookmarkRenderService.total, size);
 
   if (window.scrollY > toolbar.offsetTop) {
@@ -54,7 +51,7 @@ async function onUrlChange() {
 async function onItemsRendered(toolbar: BookmarkToolbarElement, urlParams: IUrlParams) {
   const pagination = document.getElementById('nav-pagination') as PaginationElement;
 
-  if (urlParams.levelId === '0' || !urlParams.has('id')) {
+  if (urlParams.levelId === 0 || !urlParams.has('id')) {
     BookmarkRenderService.disableItems();
   } else {
     toolbar.disabled = false;
@@ -77,23 +74,27 @@ whenDefined().then(async () => {
   const goBackLink = document.getElementById('go-back') as HTMLLinkElement;
   const urlParams = await UrlService.get();
 
-  BookmarkRenderService.count = urlParams.size;
   BookmarkRenderService.levelId = urlParams.levelId;
-  BookmarkRenderService.start = (urlParams.page - 1) * urlParams.size;
-  BookmarkRenderService.recursive = urlParams.levelId !== '0' && urlParams.recursive;
-  BookmarkRenderService.content = document.getElementById('bookmarks') as HTMLDivElement;
-  BookmarkRenderService.content.parentElement.hidden = false;
-  
+  BookmarkRenderService.filters.page = urlParams.page;
+  BookmarkRenderService.filters.itemsPerPage = urlParams.size;
+  BookmarkRenderService.content = <HTMLDivElement>document.getElementById('bookmarks');
+  BookmarkRenderService.filters.recursive = (
+    urlParams.levelId !== 0 && urlParams.recursive
+  );
+  // BookmarkRenderService.content.parentElement.hidden = false;
+
   toolbar.parentElement.hidden = false;
   pagination.pageSize = urlParams.size;
 
-  if (urlParams.levelId !== '0' && urlParams.has('id')) {
+  if (urlParams.levelId !== 0 && urlParams.has('id')) {
     try {
-      const current = (await chrome.bookmarks.get(urlParams.levelId)).shift();
+      const current = (await chrome.bookmarks.get(String(urlParams.levelId))).shift();
 
       if (current && current.parentId) {
         goBackLink.hidden = false;
-        goBackLink.href = current.parentId !== '0' ? `?id=${current.parentId}` : window.location.pathname;
+        goBackLink.href = current.parentId !== '0'
+          ? `?id=${current.parentId}`
+          : window.location.pathname;
       }
     } catch (error) {
       goBackLink.hidden = false;
