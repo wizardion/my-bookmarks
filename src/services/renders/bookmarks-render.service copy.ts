@@ -2,7 +2,8 @@
 // import {
 //   BookmarkFolderElement
 // } from 'components/bookmark-folder/bookmark-folder.component';
-// import { BookmarksAPIManager } from 'services/bookmarks-api/bookmark-manager.service';
+// import { BookmarksAPIManager }
+// from 'services/bookmarks-api/bookmark-manager.service';
 // import { IBookmarkNode } from 'core';
 // import { IBookmarkElement } from 'components/models/bookmark.models';
 
@@ -32,7 +33,8 @@
 //       for (let i = 0; i < data.length; i++) {
 //         const node = data[i];
 //         const line = document.createElement('div');
-//         const bookmark = node.url ? this.renderBookmark(node) : this.renderFolder(node);
+//         const bookmark = node.url
+// ? this.renderBookmark(node) : this.renderFolder(node);
 
 //         if (!this.unsuccesfull) {
 //           bookmark.shift(node.level * 20);
@@ -51,7 +53,8 @@
 //       this.clear('<i class="mute margin-left">No bookmarks here.</i>');
 //     }
 
-//     window.dispatchEvent(new CustomEvent<number>('rendered', { detail: this.total }));
+//     window.
+// dispatchEvent(new CustomEvent<number>('rendered', { detail: this.total }));
 //   }
 
 //   public static async clear(message: string = '') {
@@ -68,7 +71,8 @@
 
 //   public static disableItems(value: boolean = true) {
 //     this.items.forEach((item) => {
-//       const element = document.getElementById(item.id.toString()) as IBookmarkElement;
+//       const element = document.
+// getElementById(item.id.toString()) as IBookmarkElement;
 
 //       if (element) {
 //         element.disabled = value;

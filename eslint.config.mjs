@@ -25,8 +25,8 @@ export default defineConfig([globalIgnores(["**/*.json", "**/node_modules"]), {
             chrome: "readonly",
         },
 
-        ecmaVersion: 5,
-        sourceType: "commonjs",
+        ecmaVersion: 2022,
+        sourceType: "module",
     },
 }, {
     files: ["src/**/*.ts"],
@@ -165,7 +165,6 @@ export default defineConfig([globalIgnores(["**/*.json", "**/node_modules"]), {
                 "constructor",
                 "decorated-method",
                 "protected-instance-method",
-                ["public-instance-method", "get", "set"],
                 "public-method",
                 "protected-method",
                 "private-method",

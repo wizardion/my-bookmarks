@@ -1,7 +1,7 @@
-import { StatusCodes } from "services/indexed-db/models/db.enums";
-import { IHttpStatus, IURLResponseStatus } from "./models/url.models";
-import { StatusMessages } from "./models/url.enums";
-import { delay } from "core/index";
+import { StatusCodes } from 'services/indexed-db/models/db.enums';
+import { IHttpStatus, IURLResponseStatus } from './models/url.models';
+import { StatusMessages } from './models/url.enums';
+import { delay } from 'core/index';
 
 export class UrlChecker {
   private static timeout: number = 0;

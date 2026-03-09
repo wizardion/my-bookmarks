@@ -3,6 +3,7 @@ import { BookmarkTypes, StatusCodes } from './db.enums';
 
 export interface IBookmarkLevel {
   id: string;
+  index: number;
   title: string;
 }
 
@@ -13,14 +14,15 @@ export interface IStatusDetails {
 
 export interface IBookmarkNode {
   id: number;
-  parentId: number | null;
+  parentId: number;
+  pathSort: string;
   title: string | null;
   url: string | null;
-  level: number;
   levels: IBookmarkLevel[];
   type: BookmarkTypes;
   selected: boolean;
   code: StatusCodes;
+  // index: number;
   index: number;
   created: number;
   statusDetails?: IStatusDetails;
@@ -31,7 +33,7 @@ export type BookmarkDBIndexTypes =
   | 'by-type'
   | 'by-code'
   | 'by-title'
-  | 'by-order'
+  | 'by-path'
   | 'by-created';
 
 
@@ -45,7 +47,9 @@ export interface IBookmarkDB extends DBSchema {
       'by-code': number;
       'by-title': string;
 
-      'by-order': number;
+      // 'by-order': number;
+      // 'by-parent-path': [number, string];
+      'by-path': string;
       'by-created': number;
     };
   };

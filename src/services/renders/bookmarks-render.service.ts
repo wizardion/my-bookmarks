@@ -1,8 +1,10 @@
-import { BookmarkFolderElement } from "components/bookmark-folder/bookmark-folder.component";
-import { BookmarkElement } from "components/bookmark/bookmark.component";
-import { BookmarksService } from "services/bookmarks/bookmarks.service";
-import { IBookmarksFilters } from "services/bookmarks/models/bookmarks.models";
-import { IBookmarkNode } from "services/indexed-db/models/db.models";
+import {
+  BookmarkFolderElement
+} from 'components/bookmark-folder/bookmark-folder.component';
+import { BookmarkElement } from 'components/bookmark/bookmark.component';
+import { BookmarksService } from 'services/bookmarks/bookmarks.service';
+import { IBookmarksFilters } from 'services/bookmarks/models/bookmarks.models';
+import { IBookmarkNode } from 'services/indexed-db/models/db.models';
 
 
 export class BookmarkRenderService {
@@ -10,9 +12,10 @@ export class BookmarkRenderService {
   static content: HTMLDivElement;
 
   public static async render() {
-    const children = await BookmarksService.getChildren(this.levelId);
-
-    console.log('children', children)
+    const children = (await BookmarksService.getChildren(this.levelId));
+    // .sort((a, b) => {
+    //   return a.pathSort.localeCompare(b.pathSort);
+    // });
 
     if (children.length) {
       const fragment = document.createDocumentFragment();
@@ -22,9 +25,9 @@ export class BookmarkRenderService {
         const line = document.createElement('div');
         const bookmark = node.url ? this.renderBookmark(node) : this.renderFolder(node);
 
-        // if (!this.unsuccesfull) {
-        //   bookmark.shift(node.level * 20);
-        // }
+        if (!this.filters.unsuccessfulOnly) {
+          bookmark.shift(Math.max(node.levels.length - 1, 0) * 20);
+        }
 
         line.classList.add('bookmark-line');
         line.appendChild(bookmark);
@@ -39,7 +42,8 @@ export class BookmarkRenderService {
       this.clear('No bookmarks here.');
     }
 
-    // window.dispatchEvent(new CustomEvent<number>('rendered', { detail: this.total }));
+    // window
+    // .dispatchEvent(new CustomEvent<number>('rendered', { detail: this.total }));
   }
 
   public static async clear(message: string) {
@@ -59,11 +63,15 @@ export class BookmarkRenderService {
   }
 
   public static disableItems(value: boolean = true) {
+    const folders = this.content.querySelectorAll<BookmarkFolderElement>(
+      BookmarkFolderElement.selector,
+    );
     const items = this.content.querySelectorAll<BookmarkElement>(
-      BookmarkElement.selector
+      BookmarkElement.selector,
     );
 
     items.forEach(i => i.disabled = value);
+    folders.forEach(i => i.disabled = value);
   }
 
   private static renderFolder(node: IBookmarkNode): BookmarkFolderElement {
@@ -76,6 +84,7 @@ export class BookmarkRenderService {
     item.title = node.title;
     item.selected = node.selected;
     item.open = this.filters.recursive;
+    item.path = node.pathSort;
 
     item.setStatus(node.statusDetails);
     item.showPath(node.levels);
@@ -90,6 +99,7 @@ export class BookmarkRenderService {
     item.url = node.url;
     item.title = node.title;
     item.selected = node.selected;
+    item.path = node.pathSort;
 
     item.setStatus(node.statusDetails);
     item.showPath(node.levels);

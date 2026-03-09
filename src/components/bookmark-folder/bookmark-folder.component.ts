@@ -100,6 +100,10 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
     super.title = value;
   }
 
+  set path(value: string) {
+    this.link.innerText = `[${value}] ${this.link.innerText}`;
+  }
+
   set url(value: string) {
     this.link.href = value;
   }

@@ -247,7 +247,7 @@ module.exports = {
         return JSON.stringify(manifest, null, 2);
       }
     }),
-    new FileListPlugin({ options: true })
+    new FileListPlugin({ root: true })
   ],
   stats: {
     errorDetails: true,

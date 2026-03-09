@@ -4,7 +4,8 @@
 // import { BookmarkElement } from 'components/bookmark/bookmark.component';
 // import { IBookmarkElement } from 'components/models/bookmark.models';
 // import { BookmarkToolbarElement } from 'components/toolbar/toolbar.component';
-// import { BookmarksAPIManager } from 'services/bookmarks-api/bookmark-manager.service';
+// import { BookmarksAPIManager }
+// from 'services/bookmarks-api/bookmark-manager.service';
 // import { UrlService } from 'services/url/url.service';
 
 

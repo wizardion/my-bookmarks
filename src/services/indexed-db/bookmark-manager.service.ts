@@ -28,17 +28,37 @@ export class IndexedDBManager {
     parentId: number,
     offset: number | null = null,
     limit: number | null = null,
+    children: boolean = false,
     direction: 'next' | 'prev' = 'next'
   ): Promise<IBookmarkNode[]> {
-    if (offset === null || limit === null) {
-      const db = await this.dbPromise;
+    if (children) {
+      const parent = await this.get(parentId);
+      const range = IDBKeyRange.bound(
+        parent?.pathSort || '', (parent?.pathSort || '') + '\uffff', true
+      );
 
-      return db.getAllFromIndex(STORE_NAME, 'by-parent-id', parentId);
+      return this.getPaginatedResults('by-path', range, offset, limit, direction);
     }
 
-    return this.getPaginatedResults(
-      'by-parent-id', IDBKeyRange.only(parentId), offset, limit, direction
-    );
+    const range = IDBKeyRange.only(parentId);
+
+    return this.getPaginatedResults('by-parent-id', range, offset, limit, direction);
+
+    // if (offset === null || limit === null) {
+    //   const db = await this.dbPromise;
+
+    //   return db.getAllFromIndex(STORE_NAME, 'by-parent-id', parentId);
+    // }
+
+    // if (children) {
+    //   return this.getPaginatedResults(
+    //     'by-parent-id', IDBKeyRange.lowerBound(parentId), offset, limit, direction
+    //   );
+    // }
+
+    // return this.getPaginatedResults(
+    //   'by-parent-id', IDBKeyRange.only(parentId), offset, limit, direction
+    // );
   }
 
   async getChildrenCount(parentId: number): Promise<number> {
@@ -251,7 +271,7 @@ export class IndexedDBManager {
         tx.done // Ensure the transaction completes successfully
       ]);
 
-      console.log(`Successfully created ${bookmarks.length} bookmarks.`);
+      // console.log(`Successfully created ${bookmarks.length} bookmarks.`);
     }
   }
 
@@ -289,6 +309,8 @@ export class IndexedDBManager {
       results.push(cursor.value);
       cursor = await cursor.continue();
     }
+
+    console.log('results.length', range, [limit, results.length]);
 
     return results;
   }

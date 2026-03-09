@@ -105,6 +105,10 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
     super.title = value;
   }
 
+  set path(value: string) {
+    this.link.innerText = `[${value}] ${this.link.innerText}`;
+  }
+
   set url(value: string) {
     this.link.href = value;
     this._url = value;

@@ -11,7 +11,10 @@ export class BookmarksAPIService {
     return bookmark;
   }
 
-  public async getChildren(id: number, recursive?: boolean): Promise<IBookmarkTreeNode[]> {
+  public async getChildren(
+    id: number,
+    recursive?: boolean
+  ): Promise<IBookmarkTreeNode[]> {
     const children = (await chrome.bookmarks.getChildren(String(id)))
       .map<Promise<IBookmarkTreeNode>>(async (i) => {
         return { ...i, levels: await this.getLevels(i) };
@@ -44,9 +47,9 @@ export class BookmarksAPIService {
     try {
       const levels: IBookmarkLevel[] = [];
 
-      while (bookmark && bookmark.parentId) {
-        levels.push({ id: bookmark.id, title: bookmark.title });
+      while (bookmark && bookmark.parentId && bookmark.parentId !== '0') {
         bookmark = await this.get(Number(bookmark.parentId));
+        levels.push({ id: bookmark.id, title: bookmark.title, index: bookmark.index });
       }
 
       return levels;

@@ -16,7 +16,7 @@ export async function initDB(): Promise<IDBPDatabase<IBookmarkDB>> {
         store.createIndex('by-title', 'title');
 
         // Create indexes for sorting
-        store.createIndex('by-order', 'index');
+        store.createIndex('by-path', 'pathSort');
         store.createIndex('by-created', 'created');
       }
     },

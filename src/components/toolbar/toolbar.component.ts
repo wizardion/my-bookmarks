@@ -7,7 +7,7 @@ import { SettingsService } from 'services/settings/settings.service';
 import { IBookmarkElement } from 'components/models/bookmark.models';
 import { UrlService } from 'services/url/url.service';
 import { delay } from 'core';
-import { DialogElement } from 'components/dialog/dialog.component';
+// import { DialogElement } from 'components/dialog/dialog.component';
 import { IBookmarkNode } from 'services/indexed-db/models/db.models';
 import { StatusCodes } from 'services/indexed-db/models/db.enums';
 import { UrlChecker } from 'services/url/url-checker.service';
@@ -76,7 +76,8 @@ export class BookmarkToolbarElement extends BaseElement {
   protected async checkAllBookmarks() {
     // const hasSelection = BookmarksAPIManager.selection.size > 0;
     // const allItems = (
-    //   hasSelection ? BookmarksAPIManager.getSelectedItems() : BookmarksAPIManager.getItems()
+    //   hasSelection ? BookmarksAPIManager.getSelectedItems() :
+    // BookmarksAPIManager.getItems()
     // ).filter(i => i.type === BookmarkTypes.LINK);
 
     // this.totalBookmarks = allItems.length;
@@ -93,7 +94,8 @@ export class BookmarkToolbarElement extends BaseElement {
     // await this.finishProgress();
 
     // const unsuccesfull = (
-    //   Array.from(BookmarksAPIManager.bookmarks.values()).filter(i => i.status?.ok === false)
+    //   Array.from(BookmarksAPIManager.bookmarks.values())
+    // .filter(i => i.status?.ok === false)
     // );
 
     // if (unsuccesfull.length) {
@@ -270,6 +272,7 @@ export class BookmarkToolbarElement extends BaseElement {
   }
 
   private async finishProgress(wait = true) {
+    console.log(wait);
     // const animations = this.form.progressBar.getAnimations();
     // const selectedItems = BookmarksAPIManager.selection.size;
     // const unsuccesfullItems = Array.from(BookmarksAPIManager.bookmarks.values())
@@ -334,7 +337,7 @@ export class BookmarkToolbarElement extends BaseElement {
 
     settings.recursive = this.form.expand.checked;
 
-    // SettingsService.set(settings);
+    SettingsService.set(settings);
     UrlService.set({ recursive: settings.recursive, page: null });
   }
 

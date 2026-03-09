@@ -1,4 +1,4 @@
-import { IBookmarksFilters } from "../models/bookmarks.models";
+import { IBookmarksFilters } from '../models/bookmarks.models';
 
 export const DEFAULT_FILTERS: IBookmarksFilters = {
   itemsPerPage: 10,
@@ -7,4 +7,4 @@ export const DEFAULT_FILTERS: IBookmarksFilters = {
   selectedOnly: false,
   unsuccessfulOnly: false,
   statusCode: null
-}
+};

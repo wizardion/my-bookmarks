@@ -1,4 +1,4 @@
-import { BookmarksAPIService } from '../bookmarks-api/bookmarks-api.service';
+// import { BookmarksAPIService } from '../bookmarks-api/bookmarks-api.service';
 import { IndexedDBManager } from '../indexed-db/bookmark-manager.service';
 import { IBookmarksFilters } from './models/bookmarks.models';
 import { IBookmarkNode } from '../indexed-db/models/db.models';
@@ -15,6 +15,8 @@ export class BookmarksService {
 
     this.total = await db.getChildrenCount(id);
 
-    return db.getChildren(id, start, start + this.filters.itemsPerPage);
+    return db.getChildren(
+      id, start, start + this.filters.itemsPerPage, this.filters.recursive
+    );
   }
 }

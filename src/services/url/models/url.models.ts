@@ -1,5 +1,5 @@
-import { StatusCodes } from "services/indexed-db/models/db.enums";
-import { StatusMessages } from "./url.enums";
+import { StatusCodes } from 'services/indexed-db/models/db.enums';
+import { StatusMessages } from './url.enums';
 
 export type IResponseClassName =
   | 'lost'

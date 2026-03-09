@@ -1,4 +1,4 @@
-import { ISettings } from "../models/settings.models";
+import { ISettings } from '../models/settings.models';
 
 export const SETTINGS_DEFAULTS: ISettings = {
   recursive: false,
