@@ -1,12 +1,13 @@
 import './assets/styles/bookmark-folder.scss';
 
-import { IBookmarkElement } from 'components/models/bookmark.models';
+import {
+  IBookmarkElement, BookmarkSelectionDetails
+} from 'components/models/bookmark.models';
 import { BaseElement } from '../base/base.component';
-import { BookmarkRenderService } from 'services/renders/bookmarks-render.service';
-import { IBookmarkTreeNode } from 'services/bookmarks-api/models/bookmarks-api.models';
 import { BookmarkTypes, StatusCodes } from 'services/indexed-db/models/db.enums';
 import { IBookmarkLevel, IStatusDetails } from 'services/indexed-db/models/db.models';
 import { IURLResponseStatus } from 'services/url/models/url.models';
+import { UrlService } from 'services/url/url.service';
 
 
 const template: DocumentFragment = BaseElement.template({
@@ -31,10 +32,12 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
     this.content = this.template.querySelector('[name="content"]');
     this.checkbox = this.template.querySelector('[name="select"]');
     this.folders = this.template.querySelector('[name="path"]') as HTMLElement;
+
+    this.link.addEventListener('click', (event) => this.navigateURL(event));
   }
 
   protected eventListeners(): void {
-    this.checkbox.addEventListener('change', () => this.onSelectionChange());
+    this.checkbox.addEventListener('change', (e) => this.onSelectionChange(e));
   }
 
   shift(px: number) {
@@ -100,10 +103,6 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
     super.title = value;
   }
 
-  set path(value: string) {
-    this.link.innerText = `[${value}] ${this.link.innerText}`;
-  }
-
   set url(value: string) {
     this.link.href = value;
   }
@@ -124,31 +123,26 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
     }
   }
 
-  private async onSelectionChange() {
-    const checked = this.checkbox.checked;
-    const tree = await chrome.bookmarks.getSubTree(this.id);
+  private async onSelectionChange(e: Event) {
+    const selectEvent = new CustomEvent<BookmarkSelectionDetails>(
+      'bookmark-selection-change',
+      {
+        bubbles: true, // Crucial: allows the event to travel up to the container
+        composed: true, // Allows the event to cross the Shadow DOM boundary
+        detail: {
+          id: Number(this.id),
+          selected: this.checkbox.checked,
+          type: this.type,
+          originalEvent: e
+        }
+      });
 
-    // BookmarksAPIManager.setSelection(Number(this.id), this.checkbox.checked);
-
-    if (BookmarkRenderService.filters.recursive) {
-      this.selectionSubItems(tree, checked);
-    }
+    this.dispatchEvent(selectEvent);
   }
 
-  private selectionSubItems(items: IBookmarkTreeNode[], checked: boolean, level = 0) {
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      const element = document.getElementById(item.id) as IBookmarkElement;
+  private navigateURL(event: Event) {
+    event.preventDefault();
 
-      // BookmarksAPIManager.setSelection(Number(item.id), checked);
-
-      if (element) {
-        element.selected = checked;
-      }
-
-      if (item.children) {
-        this.selectionSubItems(item.children, checked, level + 1);
-      }
-    }
+    UrlService.set({ id: Number(this.id), page: null });
   }
 }

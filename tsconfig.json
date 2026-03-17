@@ -1,6 +1,8 @@
 {
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
     "moduleResolution": "node",
     "outDir": "./dist/",
     "noImplicitAny": true,

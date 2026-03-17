@@ -6,7 +6,7 @@ nav-pagination button {
   border-radius: 0px;
   border: none;
   margin: 0 !important;
-  width: 25px;
+  width: 30px;
   height: 18px;
   border: 1px solid var(--control-border-color);
   border-left: none;
@@ -30,14 +30,13 @@ nav-pagination fieldset {
   margin: 0;
 }
 
-
-nav-pagination > button:first-of-type {
+nav-pagination>div>button:first-of-type {
   border-left: 1px solid var(--control-border-color);
   border-top-left-radius: 4px;
   border-bottom-left-radius: 4px;
 }
 
-nav-pagination > button:last-of-type {
+nav-pagination>div>button:last-of-type {
   border-top-right-radius: 4px;
   border-bottom-right-radius: 4px;
 }

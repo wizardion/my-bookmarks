@@ -28,18 +28,24 @@ export class PaginationElement extends BaseElement {
     this.template = <HTMLElement>template.cloneNode(true);
 
     this.form = {
+      first: this.template.querySelector('[name="first"]'),
       next: this.template.querySelector('[name="next"]'),
       prev: this.template.querySelector('[name="prev"]'),
+      last: this.template.querySelector('[name="last"]'),
       fieldset: this.template.querySelector('[name="set"]'),
       pageSize: this.template.querySelector('[name="itemsPerPage"]')
     };
   }
 
   protected eventListeners(): void {
+    this.form.first
+      .addEventListener('click', () => this.onPageChange(0));
     this.form.next
-      .addEventListener('mousedown', () => this.onPageChange(this._currentPage + 1));
+      .addEventListener('click', () => this.onPageChange(this._currentPage + 1));
     this.form.prev
-      .addEventListener('mousedown', () => this.onPageChange(this._currentPage - 1));
+      .addEventListener('click', () => this.onPageChange(this._currentPage - 1));
+    this.form.last
+      .addEventListener('click', () => this.onPageChange(this.pageCount));
     this.form.pageSize.addEventListener('change', () => this.onPageSizeChange());
   }
 
@@ -57,10 +63,14 @@ export class PaginationElement extends BaseElement {
     this._pagesCount = Math.ceil(this._total / this._pageSize);
     this.form.next.hidden = this._pagesCount < 2;
     this.form.prev.hidden = this._pagesCount < 2;
+    this.form.first.hidden = this._pagesCount < 2;
+    this.form.last.hidden = this._pagesCount < 2;
     this.form.fieldset.hidden = this._pagesCount < 2;
 
+    this.form.first.disabled = this._currentPage < 2;
     this.form.prev.disabled = this._currentPage < 2;
     this.form.next.disabled = this._currentPage >= this._pagesCount;
+    this.form.last.disabled = this._currentPage >= this._pagesCount;
 
     if (this.form.current && this.form.pages.length) {
       this.form.current.disabled = false;
@@ -100,8 +110,10 @@ export class PaginationElement extends BaseElement {
   }
 
   set disabled(value: boolean) {
+    this.form.first.disabled = value;
     this.form.prev.disabled = value;
     this.form.next.disabled = value;
+    this.form.last.disabled = value;
     this.form.pageSize.disabled = value;
     this.form.fieldset.disabled = value;
     this._disabled = value;
@@ -152,7 +164,7 @@ export class PaginationElement extends BaseElement {
   private onPageChange(pageId: number) {
     const id = Math.max(Math.min(pageId, this.form.pages.length), 1);
 
-    UrlService.set({ page: id, size: this._pageSize });
+    UrlService.set({ page: id });
   }
 
   private async onPageSizeChange() {
@@ -161,6 +173,6 @@ export class PaginationElement extends BaseElement {
     settings.size = Number(this.form.pageSize.value);
 
     SettingsService.set(settings);
-    UrlService.set({ page: null, size: Number(this.form.pageSize.value) });
+    UrlService.emitEvent();
   }
 }

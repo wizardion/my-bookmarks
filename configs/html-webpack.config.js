@@ -8,6 +8,7 @@ module.exports = {
   inject: 'body',
   minify: {
     collapseWhitespace: true,
+    collapseInlineTagWhitespace: true,
     keepClosingSlash: true,
     removeComments: true,
     removeRedundantAttributes: false,

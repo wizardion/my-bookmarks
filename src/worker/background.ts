@@ -1,9 +1,10 @@
 
 import { BookmarksAPIService } from 'services/bookmarks-api/bookmarks-api.service';
 import { IndexedDBManager } from 'services/indexed-db/bookmark-manager.service';
-import { convert, syncSubtree } from './commands';
+import { convert, retrieveKey, syncSubtree } from './commands';
 import { IReorderInfo } from './models/background.models';
-// import { generateNKeysBetween } from 'fractional-indexing';
+import { IAppMessage, AppMessageTypes } from 'core';
+import { IBookmarkNode } from 'services/indexed-db/models/db.models';
 
 const MANAGER_PAGE = 'manager.html';
 
@@ -12,57 +13,12 @@ chrome.runtime.onInstalled.addListener(async () => {
   const db = new IndexedDBManager();
 
   await db.clear();
-  await syncSubtree(api, db, 0);
-
-  // let queue = await api.getChildren(0);
-
-  // let keys = generateNKeysBetween(null, null, queue.length + 1);
-
-  // const head = queue[0];
-  // let current = head;
-
-  // current.key = keys[0];
-
-  // for (let i = 1; i < queue.length; i++) {
-  //   current.next = queue[i];
-  //   current = current.next;
-  //   current.key = keys[i];
-  // }
-
-  // current.lastKey = keys[keys.length - 1];
-
-  // await db.clear();
-  // await db.restore(queue.map((l, i) => convert(l, keys[i])));
-
-  // while (queue && queue.length) {
-  //   const bookmark = queue.shift();
-  //   const children = await api.getChildren(Number(bookmark.id)) || [];
-
-  //   if (children.length > 0) {
-  //     keys = generateNKeysBetween(
-  //       bookmark.key, bookmark.next?.key || bookmark.lastKey, children.length + 1
-  //     );
-  //     await db.restore(children.map((l, i) => convert(l, keys[i])));
-
-  //     const head = children[0];
-  //     let current = head;
-
-  //     current.key = keys[0];
-
-  //     for (let i = 1; i < children.length; i++) {
-  //       current.next = children[i];
-  //       current = current.next;
-  //       current.key = keys[i];
-  //     }
-
-  //     current.lastKey = keys[keys.length - 1];
-  //     queue = queue.concat(children);
-  //   }
-  // }
+  await syncSubtree(api, db);
 
   console.log(`Successfully restored all ${await db.count()} bookmarks.`);
 
   await chrome.action.setPopup({ popup: '' });
+  await chrome.tabs.create({ url: MANAGER_PAGE });
 });
 
 chrome.action.onClicked.addListener(async () => {
@@ -91,56 +47,82 @@ chrome.bookmarks.onCreated.addListener(async (id: string) => {
   const db = new IndexedDBManager();
   const bookmark = await api.get(Number(id));
 
-  await db.create(convert(bookmark));
+  await db.create(
+    convert(bookmark, await retrieveKey(api, db, bookmark))
+  );
+  await chrome.runtime.sendMessage(
+    { ids: [Number(id)], type: AppMessageTypes.ADD } as IAppMessage
+  );
 });
 
 chrome.bookmarks.onRemoved.addListener(async (id: string) => {
   const db = new IndexedDBManager();
 
   await db.remove(Number(id));
+  await chrome.runtime.sendMessage(
+    { ids: [Number(id)], type: AppMessageTypes.REMOVE } as IAppMessage
+  );
 });
 
 chrome.bookmarks.onChanged.addListener(async (id: string) => {
   const api = new BookmarksAPIService();
-  // const db = new IndexedDBManager();
+  const db = new IndexedDBManager();
   const bookmark = await api.get(Number(id));
 
-  // await db.patch(Number(bookmark.id), {
-  //   title: bookmark.title,
-  //   url: bookmark.url,
-  //   index: bookmark.index
-  // });
+  await db.patch(Number(bookmark.id), {
+    title: bookmark.title,
+    url: bookmark.url,
+    index: bookmark.index,
+    pathSort: await retrieveKey(api, db, bookmark)
+  });
 
-  console.log(`Successfully updated bookmark: ${bookmark.id}.`);
+  await chrome.runtime.sendMessage(
+    { ids: [Number(id)], type: AppMessageTypes.CHANGE } as IAppMessage
+  );
 });
 
 chrome.bookmarks.onMoved.addListener(async (id: string) => {
   const api = new BookmarksAPIService();
-  // const db = new IndexedDBManager();
+  const db = new IndexedDBManager();
   const bookmark = await api.get(Number(id));
 
-  // await db.patch(Number(bookmark.id), {
-  //   parentId: Number(bookmark.parentId),
-  //   index: bookmark.index
-  // });
+  await db.patch(Number(bookmark.id), {
+    parentId: Number(bookmark.parentId),
+    index: bookmark.index,
+    pathSort: await retrieveKey(api, db, bookmark)
+  });
 
-  console.log(`Successfully moved bookmark: ${bookmark.id}.`);
+  await chrome.runtime.sendMessage(
+    { ids: [Number(id)], type: AppMessageTypes.CHANGE } as IAppMessage
+  );
 });
 
 chrome.bookmarks.onChildrenReordered.addListener(
   async (id: string, reorderInfo: IReorderInfo) => {
-    // const api = new BookmarksAPIService();
-    // const db = new IndexedDBManager();
-    // const bookmark = await api.get(Number(id));
+    const api = new BookmarksAPIService();
+    const db = new IndexedDBManager();
+    const bookmark = await api.get(Number(id));
+    const changes: Partial<IBookmarkNode>[] = [{
+      id: Number(bookmark.id),
+      index: bookmark.index,
+      pathSort: await retrieveKey(api, db, bookmark)
+    }];
 
-    // await db.patch(Number(bookmark.id), { index: bookmark.index });
+    for (const id of reorderInfo.childIds) {
+      const item = await api.get(Number(id));
 
-    // for (const id of reorderInfo.childIds) {
-    //   const bookmark = await api.get(Number(id));
+      changes.push({
+        id: Number(item.id),
+        index: item.index,
+        pathSort: await retrieveKey(api, db, item)
+      });
+    }
 
-    //   await db.patch(Number(bookmark.id), { index: bookmark.index });
-    // }
+    await db.patchBulk(changes);
 
-    console.log(`Successfully ordered ${reorderInfo.childIds.length + 1} bookmarks.`);
+    await chrome.runtime.sendMessage({
+      ids: changes.map(i => i.id),
+      type: AppMessageTypes.CHANGE
+    } as IAppMessage);
   }
 );

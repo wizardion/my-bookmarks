@@ -10,8 +10,7 @@
 	"permissions": [
 		"bookmarks",
 		"storage",
-		"alarms",
-		"nativeMessaging"
+		"favicon"
 	],
 	"host_permissions": [
 		"https://*/",

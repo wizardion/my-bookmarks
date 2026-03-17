@@ -54,7 +54,8 @@
   margin-bottom: 45px !important;
 }
 
-fieldset {
+fieldset,
+section {
   padding: 0;
   border: none;
   display: inline-block;
@@ -67,12 +68,45 @@ a {
   display: inline-block;
 }
 
-a:hover {
-  text-decoration: underline;
+a>span {
+  line-height: inherit;
+  display: inline-block;
 }
 
 a svg {
   fill: var(--icon-background-color);
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+a:has(span):hover {
+  text-decoration: none;
+}
+
+a:hover>span {
+  text-decoration: underline;
+}
+
+a:focus {
+  outline: none;
+  text-decoration: underline;
+  color: var(--base-highlight-color);
+  border-bottom-color: var(--base-highlight-color);
+}
+
+a:focus svg {
+  fill: var(--base-highlight-color);
+}
+
+a:has(span):focus {
+  text-decoration: none;
+}
+
+a:focus>span {
+  outline: none;
+  text-decoration: underline;
 }
 
 label:has(button) {
@@ -158,7 +192,7 @@ input[type=checkbox]:checked:after {
   opacity: 1;
 }
 
-input[type=checkbox]:disabled + span {
+input[type=checkbox]:disabled+span {
   color: var(--control-inactive-text-color);
 }
 
@@ -177,8 +211,8 @@ input[type=radio] {
   height: 16px;
 }
 
-input[type=checkbox] + span,
-input[type=radio] + span {
+input[type=checkbox]+span,
+input[type=radio]+span {
   cursor: pointer;
 }
 
@@ -219,7 +253,7 @@ input[type=range]:disabled::-webkit-slider-thumb {
 select:disabled,
 input:disabled,
 input[type=range]:disabled::-webkit-slider-thumb,
-input:disabled + span {
+input:disabled+span {
   cursor: default;
 }
 
@@ -240,12 +274,6 @@ input[type=checkbox]:focus {
 input[type=checkbox]:focus:after {
   outline: none;
   box-shadow: 0px 0px 0px 1px var(--control-border-color);
-}
-
-a:focus {
-  outline: none;
-  text-decoration: underline;
-  color: var(--base-highlight-color);
 }
 
 select:focus,
@@ -273,7 +301,7 @@ input[type=range]:focus::-webkit-slider-thumb {
 }
 
 .go-back {
-  margin-bottom: 10px;
+  text-align: center;
 }
 
 .no-selection {
@@ -306,6 +334,10 @@ input[type=range]:focus::-webkit-slider-thumb {
 
 .padding-right {
   padding-right: 10px;
+}
+
+.sm-margin-left {
+  margin-left: 5px;
 }
 
 .badge {

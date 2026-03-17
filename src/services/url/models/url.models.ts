@@ -1,6 +1,15 @@
 import { StatusCodes } from 'services/indexed-db/models/db.enums';
 import { StatusMessages } from './url.enums';
 
+export interface IUrlParams {
+  id: number;
+  recursive: boolean;
+  unsuccesfull: boolean;
+  timeout: number;
+  page: number;
+  // size: number;
+}
+
 export type IResponseClassName =
   | 'lost'
   | 'error'

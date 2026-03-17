@@ -1,5 +1,5 @@
 <div class="toolbar">
-  <fieldset>
+  <fieldset class="grow">
     <label>
       <input type="checkbox" name="expand-all" disabled>
       <span>Expand all</span>
@@ -18,7 +18,8 @@
       <button name="check-bookmarks" class="checkbox" disabled>
         <include src="./assets/images/check.svg"></include>
       </button>
-      <span>Check all&nbsp;</span>
+      <span name="check-all">Check all bookmarks</span>
+      <span name="check-selected" hidden>Check selected bookmarks</span>
     </label>
     <label>
       <button name="remove-bookmarks" class="checkbox" disabled>
@@ -31,18 +32,18 @@
     </label>
   </fieldset>
 
-  <div class="progress-bar" , name="progress-bar" hidden></div>
-</div>
-
-<div class="toolbar">
-  <fieldset class="extent relative right padding-right">
-    <nav-pagination id="nav-pagination" name="nav-pagination"></nav-pagination>
-  </fieldset>
-
   <fieldset class="right">
     <label>
       <input type="range" min="0" max="60" value="30" step="5" name="timeout-range" class="slider" disabled>
       <span name="timeout-text" class="timeout-text">30 s</span>
     </label>
+  </fieldset>
+
+  <div class="progress-bar" , name="progress-bar" hidden></div>
+</div>
+
+<div class="toolbar">
+  <fieldset class="extent relative right">
+    <nav-pagination id="nav-pagination" name="nav-pagination"></nav-pagination>
   </fieldset>
 </div>

@@ -1,5 +1,6 @@
-import { ISettings, IUrlParams } from 'services/settings/models/settings.models';
 import { SETTINGS_DEFAULTS } from 'services/settings/utils/settings.constant';
+import { IUrlParams } from './models/url.models';
+import { ISettings } from 'services/settings/models/settings.models';
 
 export class UrlParams implements IUrlParams {
   recursive: boolean;
@@ -7,7 +8,7 @@ export class UrlParams implements IUrlParams {
   timeout: number;
   page: number;
   size: number;
-  levelId: number;
+  id: number;
 
   private urlParams: URLSearchParams;
 
@@ -19,7 +20,7 @@ export class UrlParams implements IUrlParams {
     this.size = Number(this.urlParams.get('size')) || settings.size;
     this.page = Number(this.urlParams.get('page') || '1') || SETTINGS_DEFAULTS.page;
     this.recursive = this.urlParams.get('recursive') === 'true' || settings.recursive;
-    this.levelId = Number(this.urlParams.get('id') || '0');
+    this.id = Number(this.urlParams.get('id') || '0');
   }
 
   has(key: string): boolean {

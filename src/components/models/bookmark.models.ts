@@ -19,3 +19,17 @@ export interface IBookmarkElement extends HTMLElement {
   setFocus(value: 'checkbox' | 'status'): void;
   checkBookmark(): Promise<IURLResponseStatus>;
 }
+
+export interface BookmarkSelectionDetails {
+  id: number;
+  selected: boolean;
+  type: BookmarkTypes;
+  originalEvent: Event;
+}
+
+declare global {
+  interface HTMLElementEventMap {
+    'bookmark-selection-change': CustomEvent<BookmarkSelectionDetails>;
+  }
+}
+

@@ -6,7 +6,10 @@ export const MAX_BOOKMARKS_AMOUNT = 100;
 
 export class BookmarksAPIService {
   public async get(id: number): Promise<IBookmarkTreeNode> {
-    const [bookmark] = await chrome.bookmarks.get(String(id));
+    const [bookmark] = (await chrome.bookmarks.get(String(id)))
+      .map<Promise<IBookmarkTreeNode>>(async (i) => {
+        return { ...i, levels: await this.getLevels(i) };
+      });
 
     return bookmark;
   }
@@ -41,6 +44,10 @@ export class BookmarksAPIService {
 
   public async remove(id: number): Promise<void> {
     return chrome.bookmarks.remove(String(id));
+  }
+
+  public async count(id: number): Promise<number> {
+    return (await chrome.bookmarks.getChildren(String(id))).length;
   }
 
   private async getLevels(bookmark: IBookmarkTreeNode): Promise<IBookmarkLevel[]> {

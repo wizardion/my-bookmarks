@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 const path = require('path');
-const webpack = require('webpack');
+// const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const HtmlWebpackInjectAttributesPlugin = require('html-webpack-inject-attributes-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
@@ -12,7 +12,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const svgToMiniDataURI = require('mini-svg-data-uri');
 const processHtmlLoader = require('./html-preprocessor');
 const htmlWebpackConfig = require('./html-webpack.config');
-const htmlPlugins = require('./html-plugins');
+// const htmlPlugins = require('./html-plugins');
 const { merge } = require('webpack-merge');
 const { FileListPlugin } = require('./file-size.ts');
 
@@ -54,14 +54,7 @@ module.exports = {
     // darkTheme: path.resolve(__root__, 'src/styles/themes/dark.scss'),
 
     manager: path.resolve(__root__, 'src/pages/manager/manager.ts'),
-
-    // popup: path.resolve(__root__, 'src/pages/popup/markdown/index.ts'),
-
     background: path.resolve(__root__, 'src/worker/background.ts'),
-    // settings: path.resolve(__root__, 'src/pages/options/options.ts'),
-    // whatsNew: path.resolve(__root__, 'src/pages/whats-new/whats-new.ts'),
-
-    // offscreen: path.resolve(__root__, 'src/pages/offscreen/offscreen.ts'),
   },
   output: {
     filename: '[name].[contenthash].js',

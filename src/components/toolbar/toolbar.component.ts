@@ -66,7 +66,7 @@ export class BookmarkToolbarElement extends BaseElement {
       .addEventListener('change', () => this.onUnsuccesfullChange());
 
     UrlChecker.setTimeout(settings.timeout);
-    // BookmarksAPIManager.addEventListener('select', () => this.onSelectionChange());
+    window.addEventListener('selection-change', (e) => this.handleSelection(e.detail));
     window.addEventListener('rendered', () => this.onItemsRendered());
     // ToolbarKeyboardService.watch(this);
 
@@ -143,6 +143,7 @@ export class BookmarkToolbarElement extends BaseElement {
     this.form.expand.disabled = value;
     this.form.check.disabled = value;
     this.form.timeout.disabled = value;
+    this.form.pagination.disabled = value;
 
     super.disabled = value;
   }
@@ -310,15 +311,16 @@ export class BookmarkToolbarElement extends BaseElement {
     UrlChecker.abort();
   }
 
-  private onSelectionChange() {
-    // const size = BookmarksAPIManager.selection.size;
+  private handleSelection(count: number) {
+    const checkAll = this.querySelector<HTMLElement>('[name="check-all"]');
+    const checkSelected = this.querySelector<HTMLElement>('[name="check-selected"]');
 
-    // this.form.remove.disabled = this.processing || size === 0;
-    // this.form.removeCount.hidden = size === 0;
-    // this.form.removeCount.innerText = size.toString();
-    // (this.form.check.nextElementSibling as HTMLElement).innerText = size === 0
-    //   ? 'Check all'
-    //   : ' Check selected';
+    this.form.remove.disabled = this.processing || count === 0;
+    this.form.removeCount.hidden = count === 0;
+    this.form.removeCount.innerText = count.toString();
+
+    checkAll.hidden = count > 0;
+    checkSelected.hidden = count === 0;
   }
 
   private markPendingCount() {
@@ -338,17 +340,11 @@ export class BookmarkToolbarElement extends BaseElement {
     settings.recursive = this.form.expand.checked;
 
     SettingsService.set(settings);
-    UrlService.set({ recursive: settings.recursive, page: null });
+    UrlService.set({ page: null });
   }
 
   private async onUnsuccesfullChange() {
-    // const settings = await SettingsService.get();
-    // settings.unsuccesfull = this.form.unsuccesfull.checked;
-    // SettingsService.set(settings);
-    // UrlService.set({ unsuccesfull: settings.unsuccesfull, page: null });
-
-    BookmarkRenderService.filters.unsuccessfulOnly = this.form.unsuccesfull.checked;
-    UrlService.set({ page: null });
+    UrlService.set({ unsuccesfull: this.form.unsuccesfull.checked, page: null });
   }
 
   private async onTimeoutChange() {

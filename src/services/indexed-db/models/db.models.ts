@@ -22,35 +22,24 @@ export interface IBookmarkNode {
   type: BookmarkTypes;
   selected: boolean;
   code: StatusCodes;
-  // index: number;
   index: number;
   created: number;
   statusDetails?: IStatusDetails;
 }
 
 export type BookmarkDBIndexTypes =
-  | 'by-parent-id'
-  | 'by-type'
+  | 'by-parent-path'
   | 'by-code'
-  | 'by-title'
-  | 'by-path'
-  | 'by-created';
-
+  | 'by-path';
 
 export interface IBookmarkDB extends DBSchema {
   bookmarks: {
     key: number;
     value: IBookmarkNode;
     indexes: {
-      'by-parent-id': number;
-      'by-type': number;
+      'by-parent-path': [number, string];
       'by-code': number;
-      'by-title': string;
-
-      // 'by-order': number;
-      // 'by-parent-path': [number, string];
       'by-path': string;
-      'by-created': number;
     };
   };
 }

@@ -2,8 +2,7 @@ import { IDBPDatabase } from 'idb';
 import { initDB } from './schemas';
 import { IBookmarkDB, BookmarkDBIndexTypes, IBookmarkNode } from './models/db.models';
 import { STORE_NAME } from './utils/schemas.constant';
-import { BookmarkTypes } from './models/db.enums';
-
+import { CachedAsync } from 'core';
 
 export class IndexedDBManager {
   private dbPromise: Promise<IDBPDatabase<IBookmarkDB>>;
@@ -12,6 +11,7 @@ export class IndexedDBManager {
     this.dbPromise = initDB();
   }
 
+  @CachedAsync
   async get(id: number): Promise<IBookmarkNode | undefined> {
     const db = await this.dbPromise;
 
@@ -32,45 +32,48 @@ export class IndexedDBManager {
     direction: 'next' | 'prev' = 'next'
   ): Promise<IBookmarkNode[]> {
     if (children) {
-      const parent = await this.get(parentId);
-      const range = IDBKeyRange.bound(
-        parent?.pathSort || '', (parent?.pathSort || '') + '\uffff', true
-      );
+      const { pathSort } = await this.get(parentId) || { pathSort: '' };
+      const range = IDBKeyRange.bound(pathSort, pathSort + '\uffff', true);
 
       return this.getPaginatedResults('by-path', range, offset, limit, direction);
     }
 
-    const range = IDBKeyRange.only(parentId);
+    const range = IDBKeyRange.bound([parentId], [parentId, '\uffff']);
 
-    return this.getPaginatedResults('by-parent-id', range, offset, limit, direction);
-
-    // if (offset === null || limit === null) {
-    //   const db = await this.dbPromise;
-
-    //   return db.getAllFromIndex(STORE_NAME, 'by-parent-id', parentId);
-    // }
-
-    // if (children) {
-    //   return this.getPaginatedResults(
-    //     'by-parent-id', IDBKeyRange.lowerBound(parentId), offset, limit, direction
-    //   );
-    // }
-
-    // return this.getPaginatedResults(
-    //   'by-parent-id', IDBKeyRange.only(parentId), offset, limit, direction
-    // );
+    return this.getPaginatedResults('by-parent-path', range, offset, limit, direction);
   }
 
-  async getChildrenCount(parentId: number): Promise<number> {
+  async getAllChildren(
+    parentId: number,
+    recursive: boolean = false
+  ): Promise<IBookmarkNode[]> {
     const db = await this.dbPromise;
 
-    return db.countFromIndex(STORE_NAME, 'by-parent-id', parentId);
+    if (recursive) {
+      const { pathSort } = await this.get(parentId) || { pathSort: '' };
+      const range = IDBKeyRange.bound(pathSort, pathSort + '\uffff', true);
+
+      return db.getAllFromIndex(STORE_NAME, 'by-path', range);
+    }
+
+    const range = IDBKeyRange.bound([parentId], [parentId, '\uffff']);
+
+    return db.getAllFromIndex(STORE_NAME, 'by-parent-path', range);
   }
 
-  async getByType(type: BookmarkTypes): Promise<IBookmarkNode[]> {
+  async getChildrenCount(parentId: number, children: boolean = false): Promise<number> {
     const db = await this.dbPromise;
 
-    return db.getAllFromIndex(STORE_NAME, 'by-type', type);
+    if (children) {
+      const { pathSort } = await this.get(parentId) || { pathSort: '' };
+      const range = IDBKeyRange.bound(pathSort, pathSort + '\uffff', true);
+
+      return db.countFromIndex(STORE_NAME, 'by-path', range);
+    }
+
+    const range = IDBKeyRange.bound([parentId], [parentId, '\uffff']);
+
+    return db.countFromIndex(STORE_NAME, 'by-parent-path', range);
   }
 
   async getByCode(code: number): Promise<IBookmarkNode[]> {
@@ -80,11 +83,11 @@ export class IndexedDBManager {
   }
 
   // Exact title match. (Note: IndexedDB natively only supports exact or prefix matches)
-  async getByTitle(title: string): Promise<IBookmarkNode[]> {
-    const db = await this.dbPromise;
+  // async getByTitle(title: string): Promise<IBookmarkNode[]> {
+  //   const db = await this.dbPromise;
 
-    return db.getAllFromIndex(STORE_NAME, 'by-title', title);
-  }
+  //   return db.getAllFromIndex(STORE_NAME, 'by-title', title);
+  // }
 
   /**
    * Returns the total number of bookmark records in the store.
@@ -98,23 +101,13 @@ export class IndexedDBManager {
     return db.count(STORE_NAME);
   }
 
-  /**
-   * Returns the number of records that match a specific index value.
-   * Example: count how many 'FOLDER' types exist.
-   */
-  async getCountByType(type: BookmarkTypes): Promise<number> {
-    const db = await this.dbPromise;
+  // // Prefix title match (e.g., searching for "Goo" finds "Google")
+  // async searchByPrefix(prefix: string): Promise<IBookmarkNode[]> {
+  //   const db = await this.dbPromise;
+  //   const range = IDBKeyRange.bound(prefix, prefix + '\uffff');
 
-    return db.countFromIndex(STORE_NAME, 'by-type', type);
-  }
-
-  // Prefix title match (e.g., searching for "Goo" finds "Google")
-  async searchByPrefix(prefix: string): Promise<IBookmarkNode[]> {
-    const db = await this.dbPromise;
-    const range = IDBKeyRange.bound(prefix, prefix + '\uffff');
-
-    return db.getAllFromIndex(STORE_NAME, 'by-title', range);
-  }
+  //   return db.getAllFromIndex(STORE_NAME, 'by-title', range);
+  // }
 
   /**
    * Performs a full update or insert (Upsert).
@@ -147,6 +140,34 @@ export class IndexedDBManager {
       await store.put(updated);
     } else {
       throw new Error(`Bookmark with ID ${id} not found.`);
+    }
+
+    await tx.done;
+  }
+
+  /**
+   * Performs a partial update by ID.
+   * Useful for toggling 'selected' or updating 'statusDetails'
+   * without needing the full object beforehand.
+   */
+  async patchBulk(changes: Partial<IBookmarkNode>[]): Promise<void> {
+    const db = await this.dbPromise;
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+
+    for (const bookmark of changes) {
+      // 1. Retrieve the existing record
+      const existing = await store.get(bookmark.id);
+
+      if (existing) {
+        // 2. Merge existing data with new changes
+        const updated = { ...existing, ...bookmark };
+
+        // 3. Save it back
+        await store.put(updated);
+      } else {
+        throw new Error(`Bookmark with ID ${bookmark.id} not found.`);
+      }
     }
 
     await tx.done;
@@ -310,7 +331,7 @@ export class IndexedDBManager {
       cursor = await cursor.continue();
     }
 
-    console.log('results.length', range, [limit, results.length]);
+    // console.log('results.length', range, [limit, results.length]);
 
     return results;
   }

@@ -10,14 +10,11 @@ export async function initDB(): Promise<IDBPDatabase<IBookmarkDB>> {
         const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
 
         // Create indexes for searching
-        store.createIndex('by-parent-id', 'parentId');
-        store.createIndex('by-type', 'type');
+        store.createIndex('by-parent-path', ['parentId', 'pathSort']);
         store.createIndex('by-code', 'code');
-        store.createIndex('by-title', 'title');
 
         // Create indexes for sorting
         store.createIndex('by-path', 'pathSort');
-        store.createIndex('by-created', 'created');
       }
     },
   });
