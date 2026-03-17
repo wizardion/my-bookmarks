@@ -1,5 +1,14 @@
 import { PaginationElement } from 'components/pagination/pagination.component';
+import { IURLResponseStatus } from 'services/url/models/url.models';
 
+
+export type IRequestQueue = {
+  id: number,
+  resolved: boolean,
+  url: string,
+  promise: Promise<IURLResponseStatus> | null,
+  retries: number
+}
 
 export interface IToolbarForm {
   check: HTMLButtonElement;

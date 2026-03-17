@@ -1,11 +1,13 @@
 import './assets/styles/bookmark-folder.scss';
 
-import { IBookmarkElement } from 'components/models/bookmark.models';
+import {
+  IBookmarkElement, BookmarkSelectionDetails
+} from 'components/models/bookmark.models';
 import { BaseElement } from '../base/base.component';
-import { BookmarkManagerService } from 'services/bookmark-manager.service';
-import { BookmarkTypes, IBookmarkStatus } from 'core';
-import { BookmarkRenderService } from 'services/bookmarks-render.service';
-import { IBookmarkLevel } from 'core/models/core.models';
+import { BookmarkTypes, StatusCodes } from 'services/indexed-db/models/db.enums';
+import { IBookmarkLevel, IStatusDetails } from 'services/indexed-db/models/db.models';
+import { IURLResponseStatus } from 'services/url/models/url.models';
+import { UrlService } from 'services/url/url.service';
 
 
 const template: DocumentFragment = BaseElement.template({
@@ -21,7 +23,7 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
   private folders: HTMLElement;
   private link: HTMLLinkElement;
   private checkbox: HTMLInputElement;
-  private status: IBookmarkStatus;
+  private status: IStatusDetails;
 
   constructor() {
     super();
@@ -30,10 +32,12 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
     this.content = this.template.querySelector('[name="content"]');
     this.checkbox = this.template.querySelector('[name="select"]');
     this.folders = this.template.querySelector('[name="path"]') as HTMLElement;
+
+    this.link.addEventListener('click', (event) => this.navigateURL(event));
   }
 
   protected eventListeners(): void {
-    this.checkbox.addEventListener('change', () => this.onSelectionChange());
+    this.checkbox.addEventListener('change', (e) => this.onSelectionChange(e));
   }
 
   shift(px: number) {
@@ -58,12 +62,12 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
     throw new Error('Method not implemented.');
   }
 
-  setStatus(status: IBookmarkStatus) {
+  setStatus(status: IStatusDetails) {
     this.status = status;
   }
 
   showPath(value: IBookmarkLevel[]) {
-    for(let level of value) {
+    for (const level of value) {
       const element = document.createElement('a');
 
       element.href = `?id=${level.id}`;
@@ -75,8 +79,13 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
     this.folders.hidden = value.length === 0;
   }
 
-  async checkBookmark(): Promise<IBookmarkStatus> {
-    return Promise.resolve(this.status);
+  async checkBookmark(): Promise<IURLResponseStatus> {
+    return Promise.resolve({
+      ok: true,
+      code: StatusCodes.ok,
+      className: 'success',
+      title: ''
+    });
   }
 
   set disabled(value: boolean) {
@@ -114,31 +123,26 @@ export class BookmarkFolderElement extends BaseElement implements IBookmarkEleme
     }
   }
 
-  private async onSelectionChange() {
-    const checked = this.checkbox.checked;
-    const tree = await chrome.bookmarks.getSubTree(this.id);
+  private async onSelectionChange(e: Event) {
+    const selectEvent = new CustomEvent<BookmarkSelectionDetails>(
+      'bookmark-selection-change',
+      {
+        bubbles: true, // Crucial: allows the event to travel up to the container
+        composed: true, // Allows the event to cross the Shadow DOM boundary
+        detail: {
+          id: Number(this.id),
+          selected: this.checkbox.checked,
+          type: this.type,
+          originalEvent: e
+        }
+      });
 
-    BookmarkManagerService.setSelection(Number(this.id), this.checkbox.checked);
-
-    if (BookmarkRenderService.recursive) {
-      this.selectionSubItems(tree, checked);
-    }
+    this.dispatchEvent(selectEvent);
   }
 
-  private selectionSubItems(items: chrome.bookmarks.BookmarkTreeNode[], checked: boolean, level = 0) {
-    for (let i = 0; i < items.length; i++) {
-      const item = items[i];
-      const element = document.getElementById(item.id) as IBookmarkElement;
+  private navigateURL(event: Event) {
+    event.preventDefault();
 
-      BookmarkManagerService.setSelection(Number(item.id), checked);
-
-      if (element) {
-        element.selected = checked;
-      }
-
-      if (item.children) {
-        this.selectionSubItems(item.children, checked, level + 1);
-      }
-    }
+    UrlService.set({ id: Number(this.id), page: null });
   }
 }

@@ -7,6 +7,10 @@ bookmark-toolbar .toolbar {
   display: flex;
 }
 
+bookmark-toolbar .toolbar .grow {
+  flex-grow: 1;
+}
+
 bookmark-toolbar .toolbar .extent {
   flex: auto;
 }

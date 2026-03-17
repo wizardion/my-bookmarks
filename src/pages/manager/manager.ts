@@ -2,13 +2,14 @@ import 'styles/themes/auto.scss';
 import './assets/styles/body.scss';
 import './assets/styles/manager.scss';
 
-import { BookmarkRenderService } from 'services/bookmarks-render.service';
+import { BookmarkRenderService } from 'services/renders/bookmarks-render.service';
 import { BookmarkToolbarElement } from 'components/toolbar/toolbar.component';
 import { PaginationElement } from 'components/pagination/pagination.component';
-import { IUrlParams } from 'services/models/settings.models';
 import { Debounce } from 'services/debounce.service';
-import { UrlService } from 'services/url.service';
+import { UrlService } from 'services/url/url.service';
 import { whenDefined } from 'components';
+import { IndexedDBManager } from 'services/indexed-db/bookmark-manager.service';
+import { UrlParams } from 'services/url/url-params';
 
 
 function debounceScroll(element: HTMLElement) {
@@ -26,81 +27,82 @@ function debounceScroll(element: HTMLElement) {
   window.addEventListener('scroll', debounced, { capture: true, passive: true });
 }
 
-async function onUrlChange() {
-  const toolbar = document.getElementById('stick') as HTMLDivElement;
-  const pagination = document.getElementById('nav-pagination') as PaginationElement;
-  const { page, size, recursive, unsuccesfull } = await UrlService.get();
-  const redraw = recursive !== BookmarkRenderService.recursive;
+async function debounceUpLink(urlParams: UrlParams) {
+  const goBackLink = document.getElementById('go-back') as HTMLLinkElement;
 
-  if (unsuccesfull && !BookmarkRenderService.total) {
-    return UrlService.set({ unsuccesfull: false, page: null });
-  }
+  try {
+    const db = new IndexedDBManager();
+    const current = await db.get(urlParams.id);
 
-  BookmarkRenderService.count = size;
-  BookmarkRenderService.start = (page - 1) * size;
-  BookmarkRenderService.recursive = recursive;
-  // BookmarkRenderService.unsuccesfull = unsuccesfull;
-
-  // alert("size: " + size + ", total: " + BookmarkRenderService.total + ", unsuccesfull: " + unsuccesfull)
-
-  await BookmarkRenderService.render(redraw);
-  pagination.setPage(page, BookmarkRenderService.total, size);
-
-  if (window.scrollY > toolbar.offsetTop) {
-    window.scrollTo({ top: toolbar.offsetTop });
+    if (current?.id) {
+      goBackLink.style.visibility = '';
+      goBackLink.href = current.parentId !== 0
+        ? `?id=${current.parentId}`
+        : window.location.pathname;
+    } else {
+      goBackLink.style.visibility = 'hidden';
+    }
+  } catch {
+    goBackLink.style.visibility = '';
+    goBackLink.href = window.location.pathname;
   }
 }
 
-async function onItemsRendered(toolbar: BookmarkToolbarElement, urlParams: IUrlParams) {
-  const pagination = document.getElementById('nav-pagination') as PaginationElement;
+function navigateUp(event: Event) {
+  const goBackLink = document.getElementById('go-back') as HTMLLinkElement;
+  const targetUrl = goBackLink.getAttribute('href');
+  const params = new URLSearchParams(targetUrl || '');
 
-  if (urlParams.levelId === '0' || !urlParams.has('id')) {
-    BookmarkRenderService.disableItems();
-  } else {
-    toolbar.disabled = false;
-  }
+  event.preventDefault();
 
-  pagination.setPage(urlParams.page, BookmarkRenderService.total, urlParams.size);
-
-  debounceScroll(toolbar.parentElement);
-  window.addEventListener('popstate', () => onUrlChange());
-  window.addEventListener('pushstate', () => onUrlChange());
-
-  if (urlParams.unsuccesfull) {
-    return UrlService.set({ unsuccesfull: null, page: null });
-  }
+  UrlService.set({
+    id: params.has('id') ? Number(params.get('id')) : null,
+    page: null
+  });
 }
+
+async function onUrlChange(urlParams: UrlParams) {
+  const toolbar = document.getElementById('toolbar') as BookmarkToolbarElement;
+  const pagination = document.getElementById('nav-pagination') as PaginationElement;
+  const stick = document.getElementById('stick') as HTMLDivElement;
+
+  BookmarkRenderService.levelId = urlParams.id;
+  BookmarkRenderService.filters.page = urlParams.page;
+  BookmarkRenderService.filters.itemsPerPage = urlParams.size;
+  BookmarkRenderService.filters.recursive = (
+    urlParams.id !== 0 && urlParams.recursive
+  );
+
+  if (window.scrollY > stick.offsetTop) {
+    window.scrollTo({ top: stick.offsetTop, behavior: 'instant' });
+  }
+
+  const total = await BookmarkRenderService.countItems();
+
+  toolbar.disabled = urlParams.id === 0;
+
+  debounceUpLink(urlParams);
+  pagination.setPage(urlParams.page, total, urlParams.size);
+
+  await BookmarkRenderService.render();
+}
+
+chrome.runtime.onMessage.addListener(() => {
+  window.location.reload();
+});
 
 whenDefined().then(async () => {
-  const pagination = document.getElementById('nav-pagination') as PaginationElement;
-  const toolbar = document.getElementById('toolbar') as BookmarkToolbarElement;
   const goBackLink = document.getElementById('go-back') as HTMLLinkElement;
+  const toolbar = document.getElementById('toolbar') as BookmarkToolbarElement;
   const urlParams = await UrlService.get();
 
-  BookmarkRenderService.count = urlParams.size;
-  BookmarkRenderService.levelId = urlParams.levelId;
-  BookmarkRenderService.start = (urlParams.page - 1) * urlParams.size;
-  BookmarkRenderService.recursive = urlParams.levelId !== '0' && urlParams.recursive;
-  BookmarkRenderService.content = document.getElementById('bookmarks') as HTMLDivElement;
-  BookmarkRenderService.content.parentElement.hidden = false;
-  
   toolbar.parentElement.hidden = false;
-  pagination.pageSize = urlParams.size;
 
-  if (urlParams.levelId !== '0' && urlParams.has('id')) {
-    try {
-      const current = (await chrome.bookmarks.get(urlParams.levelId)).shift();
+  BookmarkRenderService.init(document.getElementById('bookmarks'));
 
-      if (current && current.parentId) {
-        goBackLink.hidden = false;
-        goBackLink.href = current.parentId !== '0' ? `?id=${current.parentId}` : window.location.pathname;
-      }
-    } catch (error) {
-      goBackLink.hidden = false;
-      goBackLink.href = window.location.pathname;
-      console.log('error', error);
-    }
-  }
+  debounceScroll(toolbar.parentElement);
+  goBackLink.addEventListener('click', (e) => navigateUp(e));
 
-  BookmarkRenderService.render().then(() => onItemsRendered(toolbar, urlParams));
+  await onUrlChange(urlParams);
+  UrlService.addEventListener('urlChange', (e) => onUrlChange(e));
 });

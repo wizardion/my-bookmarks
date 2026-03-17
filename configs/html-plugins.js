@@ -8,7 +8,7 @@ const htmlWebpackConfig = require('./html-webpack.config');
  * @param {string} template
  * @returns {HtmlWebpackPlugin[]}
  */
-module.exports =  function(entry, template) {
+module.exports = function (entry, template) {
   return [
     new HtmlWebpackPlugin({
       ...htmlWebpackConfig,
@@ -20,6 +20,7 @@ module.exports =  function(entry, template) {
         'autoTheme',
         entry,
       ],
+
     }),
     new HtmlWebpackPlugin({
       ...htmlWebpackConfig,

@@ -1,14 +1,5 @@
 import { ISettings } from './models/settings.models';
-
-
-export const defaultSettings: ISettings = {
-  recursive: false,
-  unsuccesfull: false,
-  timeout: 30,
-  size: 100,
-  page: 1,
-};
-
+import { SETTINGS_DEFAULTS } from './utils/settings.constant';
 
 export class SettingsService {
   private static settings: ISettings;
@@ -19,7 +10,7 @@ export class SettingsService {
       || ((await chrome.storage.local.get(this.name) || {})[this.name]) as ISettings;
 
     if (!settings) {
-      settings = defaultSettings;
+      settings = SETTINGS_DEFAULTS;
     }
 
     return {

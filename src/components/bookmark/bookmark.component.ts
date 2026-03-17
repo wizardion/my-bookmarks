@@ -1,9 +1,10 @@
 import { IBookmarkElement } from 'components/models/bookmark.models';
 import { BaseElement } from '../base/base.component';
-import { BookmarkTypes, IBookmarkStatus, ResponseStatuses } from 'core';
-import { BookmarkManagerService } from 'services/bookmark-manager.service';
-import { IBookmarkLevel } from 'core/models/core.models';
-
+import { BookmarkTypes } from 'services/indexed-db/models/db.enums';
+import { IBookmarkLevel, IStatusDetails } from 'services/indexed-db/models/db.models';
+import { UrlChecker } from 'services/url/url-checker.service';
+import { IURLResponseStatus } from 'services/url/models/url.models';
+import { UrlService } from 'services/url/url.service';
 
 const template: DocumentFragment = BaseElement.template({
   templateUrl: './bookmark.component.html'
@@ -19,21 +20,32 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
   private folders: HTMLElement;
   private checkbox: HTMLInputElement;
   private status: HTMLInputElement;
+  private favicon: SVGImageElement;
+  private icon: SVGPathElement;
   private _url: string;
+
+  // private listeners = new Map<string, IEventListener[]>();
 
   constructor() {
     super();
+
     this.template = <HTMLElement>template.cloneNode(true);
+    const svg = this.template.querySelector('[name="icon"]');
+
     this.link = this.template.querySelector('[name="link"]');
     this.content = this.template.querySelector('[name="content"]');
     this.checkbox = this.template.querySelector('[name="select"]');
     this.status = this.template.querySelector('[name="status"]');
     this.folders = this.template.querySelector('[name="path"]') as HTMLElement;
+
+    this.icon = svg.firstElementChild as SVGPathElement;
+    this.favicon = svg.lastElementChild as SVGImageElement;
   }
 
   protected eventListeners(): void {
     this.status.addEventListener('click', () => this.checkBookmark());
-    this.checkbox.addEventListener('change', () => this.onSelectionChange());
+    this.favicon.addEventListener('error', () => this.onFaviconError());
+    this.favicon.addEventListener('load', () => this.onFaviconLoaded());
   }
 
   shift(px: number) {
@@ -41,14 +53,14 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
   }
 
   reset() {
-    this.status.classList.remove(...Object.keys(ResponseStatuses));
+    // this.status.classList.remove(...Object.keys(StatusMessages));
   }
 
   setSelection(value: boolean = true) {
     this.checkbox.checked = value;
   }
 
-  setStatus(value?: IBookmarkStatus): void {
+  setStatus(value?: IStatusDetails): void {
     if (value?.className) {
       this.status.classList.toggle(value.className);
       this.status.setAttribute('title', value.title);
@@ -65,11 +77,13 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
   }
 
   showPath(value: IBookmarkLevel[]) {
-    for(let level of value) {
+    for (const level of value) {
       const element = document.createElement('a');
 
       element.href = `?id=${level.id}`;
       element.innerText = level.title;
+      element.dataset['id'] = level.id;
+      element.addEventListener('click', (event) => this.navigateURL(event));
 
       this.folders.appendChild(element);
     }
@@ -77,14 +91,14 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
     this.folders.hidden = value.length === 0;
   }
 
-  async checkBookmark(): Promise<IBookmarkStatus | null> {
+  async checkBookmark(): Promise<IURLResponseStatus | null> {
     if (!this.status.disabled) {
       this.status.disabled = true;
       this.startAnimations();
 
-      const response = await BookmarkManagerService.checkUrl(this._url);
+      const response = await UrlChecker.checkUrl(this._url);
 
-      this.setStatus(response);
+      this.setStatus({ className: response.className, title: response.title });
       this.stopAnimations();
       this.status.disabled = false;
 
@@ -107,8 +121,8 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
   set url(value: string) {
     this.link.href = value;
     this._url = value;
+    this.favicon.setAttribute('href', this.getFaviconURL(value));
   }
-
 
   set selected(value: boolean) {
     this.checkbox.checked = value;
@@ -124,8 +138,16 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
     super.disabled = value;
   }
 
-  private onSelectionChange() {
-    BookmarkManagerService.setSelection(Number(this.id), this.checkbox.checked);
+  private navigateURL(event: Event) {
+    // Prevent the default link behavior (page reload)
+    event.preventDefault();
+
+    // Get the target URL from the href attribute
+    const id = (event.target as HTMLLinkElement).dataset['id'];
+
+    // Update the URL without reloading using the History API
+    // In this simple case, we are just using the href value directly
+    UrlService.set({ id: Number(id), page: null });
   }
 
   private startAnimations() {
@@ -148,5 +170,24 @@ export class BookmarkElement extends BaseElement implements IBookmarkElement {
 
       element.endElement();
     }
+  }
+
+  private getFaviconURL(url: string) {
+    const urlParams = new URL(chrome.runtime.getURL('/_favicon/'));
+
+    urlParams.searchParams.set('pageUrl', url);
+    urlParams.searchParams.set('size', '32');
+
+    return urlParams.toString();
+  }
+
+  private onFaviconLoaded() {
+    this.icon.classList.add('hidden');
+    this.favicon.classList.remove('hidden');
+  }
+
+  private onFaviconError() {
+    this.favicon.classList.add('hidden');
+    this.icon.classList.remove('hidden');
   }
 }

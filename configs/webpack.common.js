@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 const path = require('path');
-const webpack = require('webpack');
+// const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const HtmlWebpackInjectAttributesPlugin = require('html-webpack-inject-attributes-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
@@ -12,8 +12,9 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const svgToMiniDataURI = require('mini-svg-data-uri');
 const processHtmlLoader = require('./html-preprocessor');
 const htmlWebpackConfig = require('./html-webpack.config');
-const htmlPlugins = require('./html-plugins');
+// const htmlPlugins = require('./html-plugins');
 const { merge } = require('webpack-merge');
+const { FileListPlugin } = require('./file-size.ts');
 
 const __root__ = path.resolve(__dirname, '..');
 const production = process.env.NODE_ENV === 'production';
@@ -22,24 +23,24 @@ const manifestPath = path.resolve(__root__, '.manifest/', production ? 'manifest
 const icons = {
   production: {
     light: [
-      { from: 'app-icon16.png', to: 'icons/icon16.png'},
-      { from: 'app-icon32.png', to: 'icons/icon32.png'},
-      { from: 'app-icon48.png', to: 'icons/icon48.png'},
-      { from: 'app-icon128.png', to: 'icons/icon128.png'},
+      { from: 'app-icon16.png', to: 'icons/icon16.png' },
+      { from: 'app-icon32.png', to: 'icons/icon32.png' },
+      { from: 'app-icon48.png', to: 'icons/icon48.png' },
+      { from: 'app-icon128.png', to: 'icons/icon128.png' },
     ],
     dark: [
-      { from: 'app-icon16.png', to: 'icons/icon16.png'},
-      { from: 'app-icon32.png', to: 'icons/icon32.png'},
-      { from: 'app-icon48.png', to: 'icons/icon48.png'},
-      { from: 'app-icon128.png', to: 'icons/icon128.png'},
+      { from: 'app-icon16.png', to: 'icons/icon16.png' },
+      { from: 'app-icon32.png', to: 'icons/icon32.png' },
+      { from: 'app-icon48.png', to: 'icons/icon48.png' },
+      { from: 'app-icon128.png', to: 'icons/icon128.png' },
     ],
   },
   develop: {
     light: [
-      { from: 'app-icon16.png', to: 'icons/icon16.png'},
-      { from: 'app-icon32.png', to: 'icons/icon32.png'},
-      { from: 'app-icon48.png', to: 'icons/icon48.png'},
-      { from: 'app-icon128.png', to: 'icons/icon128.png'},
+      { from: 'app-icon16.png', to: 'icons/icon16.png' },
+      { from: 'app-icon32.png', to: 'icons/icon32.png' },
+      { from: 'app-icon48.png', to: 'icons/icon48.png' },
+      { from: 'app-icon128.png', to: 'icons/icon128.png' },
     ],
     dark: [],
   }
@@ -53,14 +54,7 @@ module.exports = {
     // darkTheme: path.resolve(__root__, 'src/styles/themes/dark.scss'),
 
     manager: path.resolve(__root__, 'src/pages/manager/manager.ts'),
-
-    // popup: path.resolve(__root__, 'src/pages/popup/markdown/index.ts'),
-
     background: path.resolve(__root__, 'src/worker/background.ts'),
-    // settings: path.resolve(__root__, 'src/pages/options/options.ts'),
-    // whatsNew: path.resolve(__root__, 'src/pages/whats-new/whats-new.ts'),
-
-    // offscreen: path.resolve(__root__, 'src/pages/offscreen/offscreen.ts'),
   },
   output: {
     filename: '[name].[contenthash].js',
@@ -70,13 +64,13 @@ module.exports = {
   optimization: {
     splitChunks: {
       minSize: 1,
-      cacheGroups: {
-        vendor: {
-          test: /[\\/]node_modules[\\/]/,
-          name: 'vendors',
-          chunks: 'all',
-        },
-      },
+      // cacheGroups: {
+      //   vendor: {
+      //     test: /[\\/]node_modules[\\/]/,
+      //     name: 'vendors',
+      //     chunks: 'all',
+      //   },
+      // },
     },
   },
   module: {
@@ -128,7 +122,7 @@ module.exports = {
               // publicPath: '/styles'
               // filename: "assets/css/[name].css",
             }
-          }, 
+          },
           'css-loader',
           {
             loader: 'sass-loader',
@@ -190,7 +184,7 @@ module.exports = {
         (production ? icons.production : icons.develop).light
           .map(i => ({ from: path.resolve(__root__, 'src/icons', i.from), to: i.to })),
         (production ? icons.production : icons.develop).dark
-          .map(i => ({from: path.resolve(__root__, 'src/icons', i.from), to: i.to}))
+          .map(i => ({ from: path.resolve(__root__, 'src/icons', i.from), to: i.to }))
       )
     }),
     new MiniCssExtractPlugin({
@@ -240,12 +234,13 @@ module.exports = {
         const manifest = merge(
           require(path.resolve(__root__, 'src/manifest.json')),
           fs.existsSync(manifestPath) ? require(manifestPath) : {},
-          { background: { service_worker: assetsByChunkName.background[0] }}
+          { background: { service_worker: assetsByChunkName.background[0] } }
         );
 
         return JSON.stringify(manifest, null, 2);
       }
     }),
+    new FileListPlugin({ root: true })
   ],
   stats: {
     errorDetails: true,

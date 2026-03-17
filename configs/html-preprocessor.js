@@ -3,16 +3,18 @@
 const fs = require('fs');
 const path = require('path');
 
+const INCLUDE_PATTERN = /\<include src=\"(\.\/)?(.+)\"\/?\>(?:\<\/include\>)?/gi;
 
 function processNestedHtml(content, loaderContext, resourcePath = '') {
-  let fileDir = (resourcePath === '')? path.dirname(loaderContext.resourcePath) : path.dirname(resourcePath);
-  const INCLUDE_PATTERN = /\<include src=\"(\.\/)?(.+)\"\/?\>(?:\<\/include\>)?/gi;
+  let fileDir = (resourcePath === '')
+    ? path.dirname(loaderContext.resourcePath)
+    : path.dirname(resourcePath);
 
   function replaceHtml(match, pathRule, src) {
-    if(pathRule === './'){
+    if (pathRule === './') {
       fileDir = loaderContext.context;
     }
-    
+
     const filePath = path.resolve(fileDir, src);
     loaderContext.dependency(filePath);
     const html = fs.readFileSync(filePath, 'utf8');
@@ -27,7 +29,7 @@ function processNestedHtml(content, loaderContext, resourcePath = '') {
   }
 }
 
-module.exports =  function(content, loaderContext){
+module.exports = function (content, loaderContext) {
   let newContent = processNestedHtml(content, loaderContext);
   return newContent;
 };
